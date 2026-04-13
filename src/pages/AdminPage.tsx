@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLang } from '@/contexts/LangContext';
 import { motion } from 'framer-motion';
 import {
   Users, Video, MessageSquare, FolderOpen, Settings, BarChart3,
@@ -14,6 +15,7 @@ type Tab = 'overview' | 'users' | 'videos' | 'requests' | 'categories' | 'ldap';
 export default function AdminPage() {
   const { user, logout } = useAuth();
   const { videos, requests, categories, profiles, updateVideoStatus, deleteVideo, addCategory, deleteCategory } = useData();
+  const { T } = useLang();
   const [tab, setTab] = useState<Tab>('overview');
   const [newCatName, setNewCatName] = useState('');
   const [newCatIcon, setNewCatIcon] = useState('📁');
@@ -26,19 +28,19 @@ export default function AdminPage() {
   const [ldapTestResult, setLdapTestResult] = useState<string | null>(null);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'videos', label: 'Videos', icon: Video },
-    { id: 'requests', label: 'Requests', icon: MessageSquare },
-    { id: 'categories', label: 'Categories', icon: FolderOpen },
-    { id: 'ldap', label: 'LDAP Config', icon: Settings },
+    { id: 'overview', label: T.admin.title, icon: BarChart3 },
+    { id: 'users', label: T.admin.users, icon: Users },
+    { id: 'videos', label: T.admin.videos, icon: Video },
+    { id: 'requests', label: T.admin.requestsMgmt, icon: MessageSquare },
+    { id: 'categories', label: T.admin.categoriesMgmt, icon: FolderOpen },
+    { id: 'ldap', label: T.admin.ldap, icon: Settings },
   ];
 
   const stats = [
-    { label: 'Total Users', value: profiles.length, icon: Users, color: 'text-primary' },
-    { label: 'Total Videos', value: videos.length, icon: Video, color: 'text-accent' },
-    { label: 'Requests', value: requests.length, icon: MessageSquare, color: 'text-success' },
-    { label: 'Categories', value: categories.length, icon: FolderOpen, color: 'text-warning' },
+    { label: T.admin.totalUsers, value: profiles.length, icon: Users, color: 'text-primary' },
+    { label: T.admin.totalVideos, value: videos.length, icon: Video, color: 'text-accent' },
+    { label: T.admin.requests, value: requests.length, icon: MessageSquare, color: 'text-success' },
+    { label: T.admin.categories, value: categories.length, icon: FolderOpen, color: 'text-warning' },
   ];
 
   const testLdap = () => {
@@ -79,7 +81,7 @@ export default function AdminPage() {
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 mt-8 transition-colors"
           >
             <LogOut className="w-4 h-4" />
-            Logout
+            {T.nav.logout}
           </button>
         </div>
 
@@ -102,7 +104,7 @@ export default function AdminPage() {
         <div className="flex-1 p-6 pt-16 md:pt-6 max-w-5xl">
           {tab === 'overview' && (
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-6">Dashboard Overview</h1>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.admin.title}</h1>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {stats.map((s, i) => (
                   <motion.div
@@ -119,16 +121,16 @@ export default function AdminPage() {
                 ))}
               </div>
               <div className="bg-card rounded-xl border border-border/50 p-5">
-                <h3 className="font-display font-semibold text-foreground mb-4">Recent Activity</h3>
+                <h3 className="font-display font-semibold text-foreground mb-4">{T.admin.recentActivity}</h3>
                 <div className="space-y-3">
                   {videos.slice(0, 5).map(v => (
                     <div key={v.id} className="flex items-center gap-3 text-sm">
                       <div className={`w-2 h-2 rounded-full ${v.status === 'approved' ? 'bg-success' : v.status === 'pending' ? 'bg-warning' : 'bg-destructive'}`} />
                       <span className="text-foreground">{v.user_name}</span>
-                      <span className="text-muted-foreground">uploaded</span>
+                      <span className="text-muted-foreground">{T.admin.uploaded}</span>
                       <span className="text-foreground font-medium truncate">{v.title}</span>
                       <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${v.status === 'approved' ? 'bg-success/15 text-success' : v.status === 'pending' ? 'bg-warning/15 text-warning' : 'bg-destructive/15 text-destructive'}`}>
-                        {v.status}
+                        {v.status === 'approved' ? T.common.approved : v.status === 'pending' ? T.common.pending : T.common.rejected}
                       </span>
                     </div>
                   ))}
@@ -139,15 +141,15 @@ export default function AdminPage() {
 
           {tab === 'users' && (
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-6">Users Management</h1>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.admin.users}</h1>
               <div className="bg-card rounded-xl border border-border/50 overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border/50">
-                      <th className="text-left p-4 text-sm text-muted-foreground font-medium">Name</th>
-                      <th className="text-left p-4 text-sm text-muted-foreground font-medium hidden md:table-cell">Department</th>
-                      <th className="text-left p-4 text-sm text-muted-foreground font-medium">Rating</th>
-                      <th className="text-left p-4 text-sm text-muted-foreground font-medium hidden md:table-cell">Videos</th>
+                      <th className="text-left p-4 text-sm text-muted-foreground font-medium">{T.profile.name}</th>
+                      <th className="text-left p-4 text-sm text-muted-foreground font-medium hidden md:table-cell">{T.profile.department}</th>
+                      <th className="text-left p-4 text-sm text-muted-foreground font-medium">{T.explore.topExperts}</th>
+                      <th className="text-left p-4 text-sm text-muted-foreground font-medium hidden md:table-cell">{T.profile.videos}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -175,7 +177,7 @@ export default function AdminPage() {
 
           {tab === 'videos' && (
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-6">Videos Management</h1>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.admin.videos}</h1>
               <div className="space-y-3">
                 {videos.map(v => (
                   <div key={v.id} className="bg-card rounded-xl border border-border/50 p-4 flex items-center gap-4">
@@ -201,7 +203,9 @@ export default function AdminPage() {
                       )}
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         v.status === 'approved' ? 'bg-success/15 text-success' : v.status === 'pending' ? 'bg-warning/15 text-warning' : 'bg-destructive/15 text-destructive'
-                      }`}>{v.status}</span>
+                      }`}>
+                        {v.status === 'approved' ? T.common.approved : v.status === 'pending' ? T.common.pending : T.common.rejected}
+                      </span>
                       <Button size="sm" variant="ghost" onClick={() => deleteVideo(v.id)} className="text-destructive h-8">
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -214,7 +218,7 @@ export default function AdminPage() {
 
           {tab === 'requests' && (
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-6">Requests Management</h1>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.admin.requestsMgmt}</h1>
               <div className="space-y-3">
                 {requests.map(r => (
                   <div key={r.id} className="bg-card rounded-xl border border-border/50 p-4">
@@ -225,13 +229,19 @@ export default function AdminPage() {
                         r.status === 'pending' ? 'bg-warning/15 text-warning' :
                         r.status === 'completed' ? 'bg-primary/15 text-primary' :
                         'bg-destructive/15 text-destructive'
-                      }`}>{r.status}</span>
+                      }`}>
+                        {r.status === 'pending' ? T.common.pending : r.status === 'accepted' ? T.requests.accept : r.status === 'rejected' ? T.common.rejected : r.status === 'completed' ? T.requests.completed : r.status}
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">{r.from_user_name} → {r.to_user_name}</p>
                     <p className="text-sm text-foreground/80 mt-1">{r.description}</p>
                     <div className="flex gap-2 mt-2 text-xs">
-                      <span className="bg-secondary px-2 py-0.5 rounded text-secondary-foreground capitalize">{r.type}</span>
-                      <span className="bg-secondary px-2 py-0.5 rounded text-secondary-foreground capitalize">{r.priority}</span>
+                      <span className="bg-secondary px-2 py-0.5 rounded text-secondary-foreground capitalize">
+                        {r.type === 'consultation' ? T.common.consultation : r.type === 'help' ? T.common.help : T.common.task}
+                      </span>
+                      <span className="bg-secondary px-2 py-0.5 rounded text-secondary-foreground capitalize">
+                        {r.priority === 'low' ? T.common.low : r.priority === 'medium' ? T.common.medium : T.common.high}
+                      </span>
                       {r.rating && <span className="text-warning">⭐ {r.rating}/5</span>}
                     </div>
                   </div>
@@ -242,10 +252,10 @@ export default function AdminPage() {
 
           {tab === 'categories' && (
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-6">Categories Management</h1>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.admin.categoriesMgmt}</h1>
               <div className="bg-card rounded-xl border border-border/50 p-5 mb-6">
                 <h3 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-primary" /> Add Category
+                  <Plus className="w-4 h-4 text-primary" /> {T.admin.addCategory}
                 </h3>
                 <div className="flex gap-2">
                   <Input
@@ -257,14 +267,14 @@ export default function AdminPage() {
                   <Input
                     value={newCatName}
                     onChange={e => setNewCatName(e.target.value)}
-                    placeholder="Category name"
+                    placeholder={T.admin.categoryName}
                     className="flex-1 bg-secondary/50 border-border/50"
                   />
                   <Button
                     onClick={() => { if (newCatName.trim()) { addCategory(newCatName.trim(), newCatIcon); setNewCatName(''); } }}
                     className="gradient-primary text-primary-foreground"
                   >
-                    Add
+                    {T.admin.add}
                   </Button>
                 </div>
               </div>
@@ -275,7 +285,7 @@ export default function AdminPage() {
                       <span className="text-2xl">{c.icon}</span>
                       <div>
                         <p className="font-semibold text-foreground text-sm">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">{c.count} videos</p>
+                        <p className="text-xs text-muted-foreground">{c.count} {T.explore.videos}</p>
                       </div>
                     </div>
                     <Button size="sm" variant="ghost" onClick={() => deleteCategory(c.id)} className="text-destructive">
@@ -289,13 +299,13 @@ export default function AdminPage() {
 
           {tab === 'ldap' && (
             <div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-6">LDAP Configuration</h1>
+              <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.admin.ldap}</h1>
               <div className="bg-card rounded-xl border border-border/50 p-6 max-w-xl">
                 <div className="flex items-center gap-3 mb-6">
                   <Server className="w-6 h-6 text-primary" />
                   <div>
-                    <h3 className="font-display font-semibold text-foreground">LDAP Server Settings</h3>
-                    <p className="text-xs text-muted-foreground">Configure enterprise directory connection</p>
+                    <h3 className="font-display font-semibold text-foreground">{T.admin.ldapSettings}</h3>
+                    <p className="text-xs text-muted-foreground">{T.admin.ldapDesc}</p>
                   </div>
                 </div>
 
@@ -319,9 +329,9 @@ export default function AdminPage() {
 
                   <div className="flex gap-3 pt-2">
                     <Button onClick={testLdap} variant="secondary" className="flex items-center gap-2">
-                      <TestTube className="w-4 h-4" /> Test Connection
+                      <TestTube className="w-4 h-4" /> {T.admin.testConn}
                     </Button>
-                    <Button className="gradient-primary text-primary-foreground">Save Configuration</Button>
+                    <Button className="gradient-primary text-primary-foreground">{T.admin.saveConfig}</Button>
                   </div>
 
                   {ldapTestResult && (
@@ -332,7 +342,7 @@ export default function AdminPage() {
                         ldapTestResult === 'testing' ? 'bg-secondary text-muted-foreground' : 'bg-success/15 text-success'
                       }`}
                     >
-                      {ldapTestResult === 'testing' ? 'Testing connection...' : ldapTestResult}
+                      {ldapTestResult === 'testing' ? T.admin.testing : ldapTestResult}
                     </motion.div>
                   )}
                 </div>

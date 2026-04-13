@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { useLang } from '@/contexts/LangContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check } from 'lucide-react';
+import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -22,7 +22,7 @@ function Avatar({ avatar, name, size = 'md' }: { avatar?: string; name?: string;
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { profiles, videos, updateProfile } = useData();
+  const { profiles, videos, updateProfile, deleteVideo } = useData();
   const { T } = useLang();
   const { toast } = useToast();
 
@@ -119,7 +119,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile card */}
-        <div className="px-6 -mt-14">
+        <div className="px-6 -mt-14 relative z-10">
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -186,7 +186,14 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {userVideos.map(v => (
-                <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end`} data-testid={`card-video-${v.id}`}>
+                <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end relative group`} data-testid={`card-video-${v.id}`}>
+                  <button
+                    onClick={() => deleteVideo(v.id)}
+                    className="absolute top-2 right-2 w-7 h-7 bg-black/50 hover:bg-destructive rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    data-testid={`button-delete-video-${v.id}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-white" />
+                  </button>
                   <p className="text-xs font-semibold text-foreground line-clamp-2">{v.title}</p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-foreground/70">
                     <span>❤️ {v.likes}</span>

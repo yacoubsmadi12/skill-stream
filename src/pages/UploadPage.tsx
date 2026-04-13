@@ -45,11 +45,11 @@ export default function UploadPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('video/')) {
-      setError('يرجى اختيار ملف فيديو صالح (MP4, MOV, AVI)');
+      setError(T.upload.errorType);
       return;
     }
     if (file.size > 200 * 1024 * 1024) {
-      setError('حجم الملف يجب أن لا يتجاوز 200MB');
+      setError(T.upload.errorSize);
       return;
     }
     setError('');
@@ -98,7 +98,7 @@ export default function UploadPage() {
       setUploaded(true);
       setTimeout(() => navigate('/'), 2500);
     } catch (err) {
-      setError('حدث خطأ أثناء الرفع، يرجى المحاولة مجدداً');
+      setError(T.upload.errorGeneral);
       setUploading(false);
     }
   };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLang } from '@/contexts/LangContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
@@ -57,6 +58,7 @@ function ReelCard({ reel, index }: { reel: typeof REELS[0]; index: number }) {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { T, lang, setLang } = useLang();
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -153,35 +155,35 @@ export default function LoginPage() {
               Z<span className="text-gradient">tube</span>
             </h1>
           </motion.div>
-          <p className="text-white/50 text-sm">Knowledge Sharing Platform</p>
+          <p className="text-white/50 text-sm">{T.login.platform}</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-2xl">
           <div className="flex items-center gap-2 mb-6">
             <Zap className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-display font-semibold text-white">Enterprise Login</h2>
+            <h2 className="text-lg font-display font-semibold text-white">{T.login.title}</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="text-sm text-white/60 mb-2 block">Employee ID</label>
+              <label className="text-sm text-white/60 mb-2 block">{T.login.employeeId}</label>
               <Input
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
-                placeholder="Enter your employee ID"
+                placeholder={T.login.employeeId}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary h-12"
                 required
                 data-testid="input-employee-id"
               />
             </div>
             <div>
-              <label className="text-sm text-white/60 mb-2 block">Password</label>
+              <label className="text-sm text-white/60 mb-2 block">{T.login.password}</label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder={T.login.password}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary h-12"
                 required
                 data-testid="input-password"
@@ -204,15 +206,25 @@ export default function LoginPage() {
               className="w-full h-12 gradient-primary text-white font-semibold text-base hover:opacity-90 transition-opacity"
               data-testid="button-login"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In via LDAP'}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : T.login.signIn}
             </Button>
           </form>
 
           <div className="mt-6 pt-5 border-t border-white/10">
             <p className="text-xs text-white/40 text-center">
-              Demo: <span className="text-white/70">admin / admin123</span> or <span className="text-white/70">user1 / user123</span>
+              {T.login.demo} <span className="text-white/70">admin / admin123</span> {T.login.or} <span className="text-white/70">user1 / user123</span>
             </p>
           </div>
+        </div>
+
+        {/* Language toggle on login page */}
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            className="px-4 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-bold text-white transition-colors"
+          >
+            {lang === 'en' ? 'العربية' : 'English'}
+          </button>
         </div>
       </motion.div>
     </div>
