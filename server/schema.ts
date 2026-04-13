@@ -23,8 +23,25 @@ export const profiles = pgTable('profiles', {
   followers: integer('followers').notNull().default(0),
   following: integer('following').notNull().default(0),
   videos_count: integer('videos_count').notNull().default(0),
+  points: integer('points').notNull().default(0),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const user_follows = pgTable('user_follows', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  follower_id: text('follower_id').notNull(),
+  following_id: text('following_id').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const points_history = pgTable('points_history', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id: text('user_id').notNull(),
+  action: text('action').notNull(),
+  points: integer('points').notNull(),
+  description: text('description').notNull().default(''),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const videos = pgTable('videos', {

@@ -1,13 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import { db } from './db.js';
-import { categories, comments, profiles, request_messages, service_requests, videos } from './schema.js';
-import { eq, desc, asc, sql } from 'drizzle-orm';
+import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history } from './schema.js';
+import { eq, desc, asc, sql, and } from 'drizzle-orm';
 import { seedIfEmpty } from './seed.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '60mb' }));
+
+// ── Points helper ──────────────────────────────────────────────
+async function awardPoints(userId: string, action: string, points: number, description: string) {
+  await db.insert(points_history).values({ user_id: userId, action, points, description });
+  await db.update(profiles).set({ points: sql`points + ${points}` }).where(eq(profiles.user_id, userId));
+}
 
 // ── Categories ────────────────────────────────────────────────
 app.get('/api/categories', async (_req, res) => {
@@ -73,7 +79,6 @@ app.post('/api/videos', async (req, res) => {
       thumbnail_color: v.thumbnailColor,
       status: v.status,
     }).returning();
-    // Bump user videos_count
     await db.update(profiles).set({ videos_count: sql`videos_count + 1` }).where(eq(profiles.user_id, v.userId));
     res.json({ ...row, comments: [] });
   } catch (e) {
@@ -83,7 +88,12 @@ app.post('/api/videos', async (req, res) => {
 
 app.patch('/api/videos/:id', async (req, res) => {
   try {
+    const prev = await db.select().from(videos).where(eq(videos.id, req.params.id));
     const [row] = await db.update(videos).set(req.body).where(eq(videos.id, req.params.id)).returning();
+    // Award points when video is approved
+    if (req.body.status === 'approved' && prev[0]?.status !== 'approved') {
+      await awardPoints(row.user_id, 'video_approved', 50, `تمت الموافقة على الفيديو: ${row.title}`);
+    }
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -96,6 +106,28 @@ app.post('/api/videos/:id/view', async (req, res) => {
       .set({ views: sql`views + 1` })
       .where(eq(videos.id, req.params.id))
       .returning();
+    // Award points every 100 views
+    if (row.views % 100 === 0) {
+      await awardPoints(row.user_id, 'views_milestone', 10, `وصل الفيديو "${row.title}" إلى ${row.views} مشاهدة`);
+    }
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.post('/api/videos/:id/like', async (req, res) => {
+  try {
+    const { userId, liked } = req.body;
+    const delta = liked ? 1 : -1;
+    const [row] = await db.update(videos)
+      .set({ likes: sql`likes + ${delta}` })
+      .where(eq(videos.id, req.params.id))
+      .returning();
+    // Award points to video owner on new like
+    if (liked) {
+      await awardPoints(row.user_id, 'video_liked', 5, `أُعجب شخص بفيديوك: ${row.title}`);
+    }
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -127,6 +159,11 @@ app.post('/api/comments', async (req, res) => {
       user_name: userName,
       text,
     }).returning();
+    // Award points to video owner for receiving a comment
+    const [vid] = await db.select().from(videos).where(eq(videos.id, videoId));
+    if (vid && vid.user_id !== userId) {
+      await awardPoints(vid.user_id, 'comment_received', 3, `تعليق جديد على فيديوك: ${vid.title}`);
+    }
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -153,19 +190,12 @@ app.post('/api/profiles', async (req, res) => {
   }
 });
 
-// Upsert profile (create if not exists)
 app.post('/api/profiles/upsert', async (req, res) => {
   try {
     const { userId, name, department } = req.body;
     const existing = await db.select().from(profiles).where(eq(profiles.user_id, userId));
-    if (existing.length > 0) {
-      return res.json(existing[0]);
-    }
-    const [row] = await db.insert(profiles).values({
-      user_id: userId,
-      name,
-      department: department || '',
-    }).returning();
+    if (existing.length > 0) return res.json(existing[0]);
+    const [row] = await db.insert(profiles).values({ user_id: userId, name, department: department || '' }).returning();
     return res.json(row);
   } catch (e) {
     return res.status(500).json({ error: String(e) });
@@ -184,6 +214,60 @@ app.patch('/api/profiles/:userId', async (req, res) => {
     if (avatar !== undefined) updates.avatar = avatar;
     const [row] = await db.update(profiles).set(updates).where(eq(profiles.user_id, req.params.userId)).returning();
     res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// ── Follows ───────────────────────────────────────────────────
+app.get('/api/follows', async (req, res) => {
+  try {
+    const { userId } = req.query as { userId: string };
+    const rows = await db.select().from(user_follows).where(eq(user_follows.follower_id, userId));
+    res.json(rows.map(r => r.following_id));
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.post('/api/follows', async (req, res) => {
+  try {
+    const { followerId, followingId } = req.body;
+    const existing = await db.select().from(user_follows)
+      .where(and(eq(user_follows.follower_id, followerId), eq(user_follows.following_id, followingId)));
+    if (existing.length > 0) return res.json({ ok: true });
+    await db.insert(user_follows).values({ follower_id: followerId, following_id: followingId });
+    await db.update(profiles).set({ followers: sql`followers + 1` }).where(eq(profiles.user_id, followingId));
+    await db.update(profiles).set({ following: sql`following + 1` }).where(eq(profiles.user_id, followerId));
+    // Award points to the person being followed
+    await awardPoints(followingId, 'new_follower', 10, 'حصلت على متابع جديد');
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
+app.delete('/api/follows', async (req, res) => {
+  try {
+    const { followerId, followingId } = req.body;
+    await db.delete(user_follows)
+      .where(and(eq(user_follows.follower_id, followerId), eq(user_follows.following_id, followingId)));
+    await db.update(profiles).set({ followers: sql`GREATEST(followers - 1, 0)` }).where(eq(profiles.user_id, followingId));
+    await db.update(profiles).set({ following: sql`GREATEST(following - 1, 0)` }).where(eq(profiles.user_id, followerId));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// ── Points ────────────────────────────────────────────────────
+app.get('/api/points/:userId', async (req, res) => {
+  try {
+    const rows = await db.select().from(points_history)
+      .where(eq(points_history.user_id, req.params.userId))
+      .orderBy(desc(points_history.created_at))
+      .limit(50);
+    res.json(rows);
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
@@ -232,6 +316,11 @@ app.post('/api/requests', async (req, res) => {
 app.patch('/api/requests/:id', async (req, res) => {
   try {
     const [row] = await db.update(service_requests).set(req.body).where(eq(service_requests.id, req.params.id)).returning();
+    // Award points when request is completed with a rating
+    if (req.body.status === 'completed' && req.body.rating) {
+      const bonus = req.body.rating === 5 ? 15 : 0;
+      await awardPoints(row.to_user_id, 'request_completed', 20 + bonus, `أتممت طلب خدمة${bonus > 0 ? ' وحصلت على تقييم 5 نجوم!' : ''}`);
+    }
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });

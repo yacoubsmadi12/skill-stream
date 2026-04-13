@@ -72,6 +72,7 @@ export interface UserProfile {
   followers: number;
   following: number;
   videos_count: number;
+  points: number;
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +85,15 @@ export interface Category {
   created_at: string;
 }
 
+export interface PointsHistoryEntry {
+  id: string;
+  user_id: string;
+  action: string;
+  points: number;
+  description: string;
+  created_at: string;
+}
+
 interface DataContextType {
   videos: Video[];
   requests: ServiceRequest[];
@@ -92,11 +102,12 @@ interface DataContextType {
   likedVideos: Set<string>;
   savedVideos: Set<string>;
   followedUsers: Set<string>;
+  pointsHistory: PointsHistoryEntry[];
   loading: boolean;
   toggleLike: (videoId: string) => void;
   toggleSave: (videoId: string) => void;
   toggleFollow: (userId: string) => void;
-  addComment: (videoId: string, userName: string, text: string) => void;
+  addComment: (videoId: string, userName: string, text: string, userId?: string) => void;
   addRequest: (req: { fromUserId: string; fromUserName: string; toUserId: string; toUserName: string; videoId: string; videoTitle: string; type: string; description: string; priority: string; status: string }) => void;
   updateRequestStatus: (reqId: string, status: string) => void;
   addRequestMessage: (reqId: string, senderId: string, senderName: string, text: string) => void;
@@ -109,6 +120,7 @@ interface DataContextType {
   incrementView: (videoId: string) => void;
   updateProfile: (userId: string, updates: { name?: string; department?: string; bio?: string; skills?: string[]; years_experience?: number; avatar?: string }) => Promise<void>;
   refreshData: () => void;
+  loadPointsHistory: (userId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -130,7 +142,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [likedVideos, setLikedVideos] = useState<Set<string>>(new Set());
   const [savedVideos, setSavedVideos] = useState<Set<string>>(new Set());
   const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
+  const [pointsHistory, setPointsHistory] = useState<PointsHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Load current user from localStorage
+  useEffect(() => {
+    const raw = localStorage.getItem('ztube_user');
+    if (raw) {
+      try {
+        const u = JSON.parse(raw);
+        setCurrentUserId(u.id);
+      } catch { /* ignore */ }
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -152,21 +177,30 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Load persisted follows when we know the user
+  useEffect(() => {
+    if (!currentUserId) return;
+    apiFetch(`/api/follows?userId=${currentUserId}`)
+      .then((ids: string[]) => setFollowedUsers(new Set(ids)))
+      .catch(() => {});
+  }, [currentUserId]);
+
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const toggleLike = (videoId: string) => {
     setLikedVideos(prev => {
       const next = new Set(prev);
-      const liked = next.has(videoId);
-      if (liked) next.delete(videoId); else next.add(videoId);
+      const wasLiked = next.has(videoId);
+      if (wasLiked) next.delete(videoId); else next.add(videoId);
       const video = videos.find(v => v.id === videoId);
       if (video) {
-        apiFetch(`/api/videos/${videoId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ likes: video.likes + (liked ? -1 : 1) }),
+        // Use the dedicated like endpoint so points are awarded
+        apiFetch(`/api/videos/${videoId}/like`, {
+          method: 'POST',
+          body: JSON.stringify({ userId: currentUserId, liked: !wasLiked }),
         }).catch(console.error);
+        setVideos(vs => vs.map(v => v.id === videoId ? { ...v, likes: v.likes + (wasLiked ? -1 : 1) } : v));
       }
-      setVideos(vs => vs.map(v => v.id === videoId ? { ...v, likes: v.likes + (liked ? -1 : 1) } : v));
       return next;
     });
   };
@@ -182,15 +216,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const toggleFollow = (userId: string) => {
     setFollowedUsers(prev => {
       const next = new Set(prev);
-      if (next.has(userId)) next.delete(userId); else next.add(userId);
+      const wasFollowing = next.has(userId);
+      if (wasFollowing) {
+        next.delete(userId);
+        apiFetch('/api/follows', {
+          method: 'DELETE',
+          body: JSON.stringify({ followerId: currentUserId, followingId: userId }),
+        }).catch(console.error);
+        setProfiles(ps => ps.map(p =>
+          p.user_id === userId ? { ...p, followers: Math.max(0, p.followers - 1) } : p
+        ));
+      } else {
+        next.add(userId);
+        apiFetch('/api/follows', {
+          method: 'POST',
+          body: JSON.stringify({ followerId: currentUserId, followingId: userId }),
+        }).catch(console.error);
+        setProfiles(ps => ps.map(p =>
+          p.user_id === userId ? { ...p, followers: p.followers + 1 } : p
+        ));
+      }
       return next;
     });
   };
 
-  const addComment = async (videoId: string, userName: string, text: string) => {
+  const addComment = async (videoId: string, userName: string, text: string, userId?: string) => {
     const data = await apiFetch('/api/comments', {
       method: 'POST',
-      body: JSON.stringify({ videoId, userName, text }),
+      body: JSON.stringify({ videoId, userName, text, userId: userId || currentUserId }),
     });
     setVideos(vs => vs.map(v => v.id === videoId ? { ...v, comments: [...v.comments, data] } : v));
   };
@@ -225,6 +278,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ rating, feedback, status: 'completed' }),
     });
     setRequests(prev => prev.map(r => r.id === reqId ? { ...r, rating, feedback, status: 'completed' } : r));
+    // Refresh profiles so points update is reflected
+    apiFetch('/api/profiles').then(setProfiles).catch(() => {});
   };
 
   const updateVideoStatus = async (videoId: string, status: string) => {
@@ -233,6 +288,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ status }),
     });
     setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status } : v));
+    // Refresh profiles to pick up points awarded on approval
+    apiFetch('/api/profiles').then(setProfiles).catch(() => {});
   };
 
   const deleteVideo = async (videoId: string) => {
@@ -274,15 +331,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setProfiles(prev => prev.map(p => p.user_id === userId ? { ...p, ...data } : p));
   };
 
+  const loadPointsHistory = async (userId: string) => {
+    const data = await apiFetch(`/api/points/${userId}`);
+    setPointsHistory(data);
+  };
+
   return (
     <DataContext.Provider value={{
       videos, requests, categories, profiles,
-      likedVideos, savedVideos, followedUsers, loading,
+      likedVideos, savedVideos, followedUsers, pointsHistory, loading,
       toggleLike, toggleSave, toggleFollow,
       addComment, addRequest, updateRequestStatus, addRequestMessage, rateRequest,
       updateVideoStatus, deleteVideo, addVideo, addCategory, deleteCategory,
       incrementView, updateProfile,
       refreshData: fetchData,
+      loadPointsHistory,
     }}>
       {children}
     </DataContext.Provider>
