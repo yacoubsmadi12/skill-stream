@@ -14,7 +14,268 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          count: number
+          created_at: string
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          icon?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          icon?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          created_at: string
+          id: string
+          text: string
+          user_id: string
+          user_name: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          text: string
+          user_id?: string
+          user_name: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          text?: string
+          user_id?: string
+          user_name?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar: string
+          bio: string
+          created_at: string
+          department: string
+          followers: number
+          following: number
+          id: string
+          name: string
+          rating: number
+          skills: string[]
+          total_ratings: number
+          updated_at: string
+          user_id: string
+          videos_count: number
+          years_experience: number
+        }
+        Insert: {
+          avatar?: string
+          bio?: string
+          created_at?: string
+          department?: string
+          followers?: number
+          following?: number
+          id?: string
+          name: string
+          rating?: number
+          skills?: string[]
+          total_ratings?: number
+          updated_at?: string
+          user_id: string
+          videos_count?: number
+          years_experience?: number
+        }
+        Update: {
+          avatar?: string
+          bio?: string
+          created_at?: string
+          department?: string
+          followers?: number
+          following?: number
+          id?: string
+          name?: string
+          rating?: number
+          skills?: string[]
+          total_ratings?: number
+          updated_at?: string
+          user_id?: string
+          videos_count?: number
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      request_messages: {
+        Row: {
+          created_at: string
+          id: string
+          request_id: string
+          sender_id: string
+          sender_name: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_id: string
+          sender_id: string
+          sender_name: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_id?: string
+          sender_id?: string
+          sender_name?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "request_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "service_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_requests: {
+        Row: {
+          created_at: string
+          description: string
+          feedback: string | null
+          from_user_id: string
+          from_user_name: string
+          id: string
+          priority: string
+          rating: number | null
+          status: string
+          to_user_id: string
+          to_user_name: string
+          type: string
+          updated_at: string
+          video_id: string
+          video_title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          feedback?: string | null
+          from_user_id: string
+          from_user_name: string
+          id?: string
+          priority?: string
+          rating?: number | null
+          status?: string
+          to_user_id: string
+          to_user_name: string
+          type: string
+          updated_at?: string
+          video_id: string
+          video_title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          feedback?: string | null
+          from_user_id?: string
+          from_user_name?: string
+          id?: string
+          priority?: string
+          rating?: number | null
+          status?: string
+          to_user_id?: string
+          to_user_name?: string
+          type?: string
+          updated_at?: string
+          video_id?: string
+          video_title?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          likes: number
+          saves: number
+          status: string
+          tags: string[]
+          thumbnail_color: string
+          title: string
+          updated_at: string
+          user_avatar: string
+          user_department: string
+          user_id: string
+          user_name: string
+          video_url: string
+          views: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          likes?: number
+          saves?: number
+          status?: string
+          tags?: string[]
+          thumbnail_color?: string
+          title: string
+          updated_at?: string
+          user_avatar?: string
+          user_department?: string
+          user_id: string
+          user_name: string
+          video_url?: string
+          views?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          likes?: number
+          saves?: number
+          status?: string
+          tags?: string[]
+          thumbnail_color?: string
+          title?: string
+          updated_at?: string
+          user_avatar?: string
+          user_department?: string
+          user_id?: string
+          user_name?: string
+          video_url?: string
+          views?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
