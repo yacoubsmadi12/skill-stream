@@ -3,7 +3,57 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { Loader2, Play, Zap } from 'lucide-react';
+import { Loader2, Play, Zap, BookOpen, Cpu, BarChart2, Globe, Shield, Lightbulb, Wifi, Database } from 'lucide-react';
+
+const REELS = [
+  { icon: BookOpen, title: 'كيفية إدارة المشاريع', dept: 'Project Management', color: 'from-purple-600 to-indigo-700', views: '2.4K' },
+  { icon: Cpu, title: 'أساسيات الذكاء الاصطناعي', dept: 'AI & Data', color: 'from-cyan-500 to-blue-600', views: '5.1K' },
+  { icon: BarChart2, title: 'تحليل بيانات العملاء', dept: 'Sales', color: 'from-emerald-500 to-teal-600', views: '3.8K' },
+  { icon: Globe, title: 'شبكات الجيل الخامس 5G', dept: 'Network', color: 'from-pink-500 to-rose-600', views: '6.2K' },
+  { icon: Shield, title: 'الأمن السيبراني', dept: 'IT Security', color: 'from-orange-500 to-amber-600', views: '4.5K' },
+  { icon: Lightbulb, title: 'الابتكار في الاتصالات', dept: 'Innovation', color: 'from-violet-500 to-purple-700', views: '3.2K' },
+  { icon: Wifi, title: 'تقنيات الشبكات اللاسلكية', dept: 'Network', color: 'from-sky-500 to-cyan-600', views: '2.9K' },
+  { icon: Database, title: 'إدارة قواعد البيانات', dept: 'IT', color: 'from-lime-500 to-green-600', views: '1.8K' },
+  { icon: BookOpen, title: 'مهارات التواصل الفعّال', dept: 'HR', color: 'from-fuchsia-500 to-pink-600', views: '7.3K' },
+  { icon: Cpu, title: 'تطوير التطبيقات', dept: 'Engineering', color: 'from-blue-500 to-indigo-600', views: '4.1K' },
+  { icon: BarChart2, title: 'استراتيجيات التسويق', dept: 'Marketing', color: 'from-red-500 to-orange-600', views: '3.6K' },
+  { icon: Globe, title: 'خدمة العملاء المتميزة', dept: 'Customer Care', color: 'from-teal-500 to-emerald-600', views: '5.9K' },
+];
+
+function ReelCard({ reel, index }: { reel: typeof REELS[0]; index: number }) {
+  const Icon = reel.icon;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.5 }}
+      className={`relative rounded-2xl overflow-hidden bg-gradient-to-b ${reel.color} flex-shrink-0 w-[130px] h-[200px] md:w-[150px] md:h-[230px] shadow-lg`}
+    >
+      <div className="absolute inset-0 bg-black/30" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-3">
+        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+        <p className="text-white text-[11px] font-bold text-center leading-tight">{reel.title}</p>
+        <span className="text-white/70 text-[10px]">{reel.dept}</span>
+      </div>
+      <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-3">
+        <div className="flex items-center gap-1">
+          <div className="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+            <Play className="w-2.5 h-2.5 text-white fill-white" />
+          </div>
+          <span className="text-white/80 text-[10px]">{reel.views}</span>
+        </div>
+        <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
+      </div>
+      <div className="absolute top-3 right-3">
+        <div className="px-1.5 py-0.5 rounded-full bg-black/40 backdrop-blur-sm border border-white/20">
+          <span className="text-white text-[9px] font-semibold">LIVE</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -21,88 +71,120 @@ export default function LoginPage() {
     if (!success) setError('Invalid employee ID or password');
   };
 
+  const topRow = REELS.slice(0, 6);
+  const bottomRow = REELS.slice(6, 12);
+
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0a3d3d 0%, #0c4a4a 25%, #0e5555 50%, #0a3d3d 75%, #082e2e 100%)' }}>
-      {/* Decorative geometric star bursts */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large stars */}
-        <svg className="absolute top-[8%] left-[5%] w-28 h-28 opacity-20 animate-[spin_30s_linear_infinite]" viewBox="0 0 100 100">
-          <polygon points="50,0 61,35 100,35 68,57 79,91 50,70 21,91 32,57 0,35 39,35" fill="none" stroke="hsl(180,40%,50%)" strokeWidth="1.5"/>
-        </svg>
-        <svg className="absolute top-[15%] right-[8%] w-36 h-36 opacity-15 animate-[spin_40s_linear_infinite_reverse]" viewBox="0 0 100 100">
-          <polygon points="50,5 58,38 95,38 64,58 74,90 50,72 26,90 36,58 5,38 42,38" fill="none" stroke="hsl(180,40%,45%)" strokeWidth="1"/>
-        </svg>
-        <svg className="absolute bottom-[12%] left-[8%] w-32 h-32 opacity-15 animate-[spin_35s_linear_infinite]" viewBox="0 0 100 100">
-          <polygon points="50,2 60,36 98,36 66,58 76,92 50,72 24,92 34,58 2,36 40,36" fill="none" stroke="hsl(180,35%,50%)" strokeWidth="1.2"/>
-        </svg>
-        <svg className="absolute bottom-[20%] right-[12%] w-24 h-24 opacity-20 animate-[spin_25s_linear_infinite_reverse]" viewBox="0 0 100 100">
-          <polygon points="50,0 61,35 100,35 68,57 79,91 50,70 21,91 32,57 0,35 39,35" fill="none" stroke="hsl(180,40%,55%)" strokeWidth="1.5"/>
-        </svg>
-        {/* Small accent stars */}
-        <svg className="absolute top-[40%] left-[15%] w-16 h-16 opacity-25" viewBox="0 0 100 100">
-          <polygon points="50,10 58,40 90,40 63,58 72,88 50,70 28,88 37,58 10,40 42,40" fill="none" stroke="hsl(180,50%,55%)" strokeWidth="2"/>
-        </svg>
-        <svg className="absolute top-[60%] right-[5%] w-20 h-20 opacity-15" viewBox="0 0 100 100">
-          <polygon points="50,5 60,38 95,38 65,58 75,90 50,72 25,90 35,58 5,38 40,38" fill="none" stroke="hsl(180,40%,50%)" strokeWidth="1.5"/>
-        </svg>
-        <svg className="absolute top-[5%] left-[45%] w-14 h-14 opacity-20" viewBox="0 0 100 100">
-          <polygon points="50,0 61,35 100,35 68,57 79,91 50,70 21,91 32,57 0,35 39,35" fill="none" stroke="hsl(180,45%,50%)" strokeWidth="2"/>
-        </svg>
-        {/* Subtle radial glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, hsl(180,40%,40%) 0%, transparent 70%)' }} />
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-black">
+
+      {/* Animated reels — top row */}
+      <div className="absolute top-0 left-0 right-0 overflow-hidden">
+        <motion.div
+          className="flex gap-3 px-3 pt-4"
+          animate={{ x: [0, -400] }}
+          transition={{ duration: 25, repeat: Infinity, ease: 'linear', repeatType: 'loop' }}
+          style={{ width: 'max-content' }}
+        >
+          {[...topRow, ...topRow].map((reel, i) => (
+            <ReelCard key={i} reel={reel} index={i % 6} />
+          ))}
+        </motion.div>
       </div>
 
+      {/* Animated reels — bottom row */}
+      <div className="absolute bottom-0 left-0 right-0 overflow-hidden">
+        <motion.div
+          className="flex gap-3 px-3 pb-4"
+          animate={{ x: [-400, 0] }}
+          transition={{ duration: 28, repeat: Infinity, ease: 'linear', repeatType: 'loop' }}
+          style={{ width: 'max-content' }}
+        >
+          {[...bottomRow, ...bottomRow].map((reel, i) => (
+            <ReelCard key={i} reel={reel} index={i % 6} />
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Dark overlay gradient — keeps center readable */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/70 pointer-events-none" />
+
+      {/* Main content */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         className="relative z-10 w-full max-w-md px-6"
       >
-        {/* Logo */}
-        <div className="text-center mb-10">
+        {/* Zain Jordan logo + Ztube branding */}
+        <div className="text-center mb-8">
+          {/* Zain Jordan wordmark */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center justify-center gap-2 mb-5"
+          >
+            {/* Zain logo SVG */}
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-2.5">
+              <svg viewBox="0 0 120 40" className="h-8 w-auto" fill="none">
+                {/* Zain arc / swoosh */}
+                <ellipse cx="20" cy="20" rx="16" ry="16" fill="#00A0E3" />
+                <path d="M10 28 Q20 8 30 28" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round"/>
+                <circle cx="20" cy="20" r="4" fill="white"/>
+                {/* Zain text */}
+                <text x="42" y="27" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="18" fill="white" letterSpacing="1">zain</text>
+                {/* Jordan text */}
+                <text x="42" y="38" fontFamily="Arial, sans-serif" fontWeight="400" fontSize="9" fill="#00A0E3" letterSpacing="2">JORDAN</text>
+              </svg>
+            </div>
+          </motion.div>
+
+          {/* Ztube logo */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-            className="inline-flex items-center gap-3 mb-4"
+            className="inline-flex items-center gap-3 mb-3"
           >
-            <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center shadow-glow">
-              <Play className="w-7 h-7 text-primary-foreground fill-current" />
+            <div className="w-12 h-12 gradient-primary rounded-2xl flex items-center justify-center shadow-glow">
+              <Play className="w-6 h-6 text-white fill-white" />
             </div>
-            <h1 className="text-4xl font-display font-bold text-foreground">
+            <h1 className="text-4xl font-display font-bold text-white">
               Z<span className="text-gradient">tube</span>
             </h1>
           </motion.div>
-          <p className="text-muted-foreground text-sm">Knowledge Sharing Platform</p>
+          <p className="text-white/50 text-sm">Knowledge Sharing Platform</p>
         </div>
 
         {/* Login Card */}
-        <div className="gradient-card rounded-2xl p-8 border border-border/50 shadow-card">
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-2xl">
           <div className="flex items-center gap-2 mb-6">
             <Zap className="w-5 h-5 text-primary" />
-            <h2 className="text-lg font-display font-semibold text-foreground">Enterprise Login</h2>
+            <h2 className="text-lg font-display font-semibold text-white">Enterprise Login</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Employee ID</label>
+              <label className="text-sm text-white/60 mb-2 block">Employee ID</label>
               <Input
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 placeholder="Enter your employee ID"
-                className="bg-secondary/50 border-border/50 focus:border-primary h-12"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary h-12"
                 required
+                data-testid="input-employee-id"
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Password</label>
+              <label className="text-sm text-white/60 mb-2 block">Password</label>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="bg-secondary/50 border-border/50 focus:border-primary h-12"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-primary h-12"
                 required
+                data-testid="input-password"
               />
             </div>
 
@@ -119,15 +201,16 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-12 gradient-primary text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity"
+              className="w-full h-12 gradient-primary text-white font-semibold text-base hover:opacity-90 transition-opacity"
+              data-testid="button-login"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In via LDAP'}
             </Button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-border/30">
-            <p className="text-xs text-muted-foreground text-center">
-              Demo: <span className="text-foreground">admin / admin123</span> or <span className="text-foreground">user1 / user123</span>
+          <div className="mt-6 pt-5 border-t border-white/10">
+            <p className="text-xs text-white/40 text-center">
+              Demo: <span className="text-white/70">admin / admin123</span> or <span className="text-white/70">user1 / user123</span>
             </p>
           </div>
         </div>
