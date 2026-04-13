@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useData } from '@/contexts/DataContext';
+import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Video } from '@/lib/mock-data';
 import { Zap, CheckCircle } from 'lucide-react';
 
 interface Props {
@@ -26,8 +25,8 @@ export default function RequestDialog({ open, onClose, video }: Props) {
     addRequest({
       fromUserId: user.id,
       fromUserName: user.name,
-      toUserId: video.userId,
-      toUserName: video.userName,
+      toUserId: video.user_id,
+      toUserName: video.user_name,
       videoId: video.id,
       videoTitle: video.title,
       type,
@@ -50,7 +49,7 @@ export default function RequestDialog({ open, onClose, video }: Props) {
           <div className="flex flex-col items-center py-8 gap-4">
             <CheckCircle className="w-16 h-16 text-success" />
             <p className="text-foreground font-display font-semibold text-lg">Request Sent!</p>
-            <p className="text-muted-foreground text-sm">Waiting for {video.userName} to respond</p>
+            <p className="text-muted-foreground text-sm">Waiting for {video.user_name} to respond</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -63,7 +62,7 @@ export default function RequestDialog({ open, onClose, video }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display">
             <Zap className="w-5 h-5 text-primary" />
-            Connect with {video.userName}
+            Connect with {video.user_name}
           </DialogTitle>
         </DialogHeader>
 

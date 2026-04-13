@@ -8,8 +8,8 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { profiles, videos, followedUsers, toggleFollow } = useData();
   
-  const profile = profiles.find(p => p.userId === user?.id);
-  const userVideos = videos.filter(v => v.userId === user?.id);
+  const profile = profiles.find(p => p.user_id === user?.id);
+  const userVideos = videos.filter(v => v.user_id === user?.id);
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
@@ -40,7 +40,7 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-1 mt-1">
                     <Star className="w-4 h-4 text-warning fill-warning" />
                     <span className="text-foreground font-semibold text-sm">{profile.rating}</span>
-                    <span className="text-muted-foreground text-xs">({profile.totalRatings} ratings)</span>
+                    <span className="text-muted-foreground text-xs">({profile.total_ratings} ratings)</span>
                   </div>
                 )}
               </div>
@@ -55,7 +55,7 @@ export default function ProfilePage() {
               {[
                 { label: 'Videos', value: userVideos.length, icon: Video },
                 { label: 'Followers', value: profile?.followers || 0, icon: Users },
-                { label: 'Experience', value: `${profile?.yearsExperience || 0}y`, icon: Calendar },
+                { label: 'Experience', value: `${profile?.years_experience || 0}y`, icon: Calendar },
               ].map(s => (
                 <div key={s.label} className="text-center p-3 bg-secondary/30 rounded-xl">
                   <s.icon className="w-4 h-4 text-primary mx-auto mb-1" />
@@ -89,7 +89,7 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {userVideos.map(v => (
-                <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnailColor} p-3 flex flex-col justify-end`}>
+                <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end`}>
                   <p className="text-xs font-semibold text-foreground line-clamp-2">{v.title}</p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-foreground/70">
                     <span>❤️ {v.likes}</span>

@@ -1,11 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Bookmark, Share2, Play, UserPlus, Zap, Send, X } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
+import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Video } from '@/lib/mock-data';
 import RequestDialog from '@/components/RequestDialog';
 
 export default function FeedPage() {
@@ -36,10 +35,10 @@ export default function FeedPage() {
           isActive={idx === currentIndex}
           isLiked={likedVideos.has(video.id)}
           isSaved={savedVideos.has(video.id)}
-          isFollowing={followedUsers.has(video.userId)}
+          isFollowing={followedUsers.has(video.user_id)}
           onLike={() => toggleLike(video.id)}
           onSave={() => toggleSave(video.id)}
-          onFollow={() => toggleFollow(video.userId)}
+          onFollow={() => toggleFollow(video.user_id)}
           onComment={(text) => addComment(video.id, user?.name || 'Anonymous', text)}
           currentUserId={user?.id || ''}
         />
@@ -97,7 +96,7 @@ function VideoCard({
     <div className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
       {/* Video Background */}
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${video.thumbnailColor} flex items-center justify-center`}
+        className={`absolute inset-0 bg-gradient-to-br ${video.thumbnail_color} flex items-center justify-center`}
         onClick={handleDoubleTap}
       >
         <div className="text-center p-8">
@@ -129,13 +128,13 @@ function VideoCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0">
-                {video.userName.charAt(0)}
+                {video.user_name.charAt(0)}
               </div>
               <div>
-                <p className="text-foreground font-semibold text-sm">{video.userName}</p>
-                <p className="text-muted-foreground text-xs">{video.userDepartment}</p>
+                <p className="text-foreground font-semibold text-sm">{video.user_name}</p>
+                <p className="text-muted-foreground text-xs">{video.user_department}</p>
               </div>
-              {video.userId !== currentUserId && (
+              {video.user_id !== currentUserId && (
                 <Button
                   size="sm"
                   variant={isFollowing ? 'secondary' : 'default'}
@@ -161,7 +160,7 @@ function VideoCard({
             <ActionButton icon={MessageCircle} count={video.comments.length} onClick={() => setShowComments(true)} />
             <ActionButton icon={Bookmark} count={video.saves} active={isSaved} onClick={onSave} activeClass="text-warning fill-warning" />
             <ActionButton icon={Share2} count={0} onClick={() => {}} />
-            {video.userId !== currentUserId && (
+            {video.user_id !== currentUserId && (
               <button
                 onClick={() => setShowRequest(true)}
                 className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center shadow-glow animate-pulse-glow"
@@ -192,10 +191,10 @@ function VideoCard({
               {video.comments.map(c => (
                 <div key={c.id} className="flex gap-3">
                   <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-secondary-foreground shrink-0">
-                    {c.userName.charAt(0)}
+                    {c.user_name.charAt(0)}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{c.userName}</p>
+                    <p className="text-sm font-semibold text-foreground">{c.user_name}</p>
                     <p className="text-sm text-foreground/80">{c.text}</p>
                   </div>
                 </div>
