@@ -1,34 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Lang, t } from '@/lib/translations';
+import React, { createContext, useContext, useEffect } from 'react';
+import { t } from '@/lib/translations';
 
 interface LangContextType {
-  lang: Lang;
-  setLang: (l: Lang) => void;
+  lang: 'en';
+  setLang: (l: 'en') => void;
   T: typeof t['en'];
-  isRTL: boolean;
+  isRTL: false;
 }
 
 const LangContext = createContext<LangContextType | null>(null);
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    return (localStorage.getItem('ztube_lang') as Lang) || 'en';
-  });
-
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    localStorage.setItem('ztube_lang', l);
-  };
-
-  const T = t[lang];
-
   useEffect(() => {
-    document.documentElement.dir = T.dir;
-    document.documentElement.lang = lang;
-  }, [lang, T.dir]);
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en';
+  }, []);
 
   return (
-    <LangContext.Provider value={{ lang, setLang, T, isRTL: lang === 'ar' }}>
+    <LangContext.Provider value={{ lang: 'en', setLang: () => {}, T: t['en'], isRTL: false }}>
       {children}
     </LangContext.Provider>
   );

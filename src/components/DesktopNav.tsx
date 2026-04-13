@@ -6,7 +6,7 @@ import { Home, Search, PlusCircle, MessageSquare, User, Shield, Play, LogOut } f
 export default function DesktopNav() {
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
-  const { lang, setLang, T } = useLang();
+  const { T } = useLang();
 
   const items = [
     { to: '/', icon: Home, label: T.nav.feed },
@@ -53,16 +53,6 @@ export default function DesktopNav() {
           </NavLink>
         )}
       </nav>
-
-      {/* Language toggle */}
-      <button
-        onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-        className="w-12 h-8 mb-3 rounded-lg flex items-center justify-center bg-secondary/60 hover:bg-secondary text-xs font-bold text-foreground transition-colors"
-        title={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
-        data-testid="button-lang-toggle"
-      >
-        {lang === 'en' ? 'ع' : 'EN'}
-      </button>
 
       <button
         onClick={logout}

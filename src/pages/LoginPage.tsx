@@ -58,7 +58,7 @@ function ReelCard({ reel, index }: { reel: typeof REELS[0]; index: number }) {
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { T, lang, setLang } = useLang();
+  const { T } = useLang();
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -217,15 +217,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Language toggle on login page */}
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-            className="px-4 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm font-bold text-white transition-colors"
-          >
-            {lang === 'en' ? 'العربية' : 'English'}
-          </button>
-        </div>
       </motion.div>
     </div>
   );

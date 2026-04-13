@@ -4,7 +4,7 @@ import { useLang } from '@/contexts/LangContext';
 
 export default function BottomNav() {
   const location = useLocation();
-  const { lang, setLang, T } = useLang();
+  const { T } = useLang();
   const isAdmin = location.pathname.startsWith('/admin');
   if (isAdmin) return null;
 
@@ -41,15 +41,6 @@ export default function BottomNav() {
             </NavLink>
           );
         })}
-
-        {/* Language toggle pill - sits above nav */}
-        <button
-          onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
-          className="absolute top-0 right-3 -translate-y-full mb-1 px-3 py-1 bg-card border border-border/50 rounded-t-lg text-xs font-bold text-foreground hover:bg-secondary transition-colors"
-          data-testid="button-lang-toggle-mobile"
-        >
-          {lang === 'en' ? 'ع' : 'EN'}
-        </button>
       </div>
     </nav>
   );
