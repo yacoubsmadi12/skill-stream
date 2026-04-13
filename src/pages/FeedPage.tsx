@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Bookmark, Share2, Play, UserPlus, Zap, Send, X } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Share2, Play, Zap, Send, X } from 'lucide-react';
 import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLang } from '@/contexts/LangContext';
@@ -8,6 +8,107 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import RequestDialog from '@/components/RequestDialog';
 
+// ── Video URL helpers ──────────────────────────────────────────
+function getVideoType(url: string): 'youtube' | 'video' | 'iframe' | 'none' {
+  if (!url) return 'none';
+  if (url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/)) return 'youtube';
+  if (url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i)) return 'video';
+  if (url.startsWith('http') || url.startsWith('https')) return 'iframe';
+  return 'none';
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+  const id = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || '';
+  return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+}
+
+// ── Smart video player ─────────────────────────────────────────
+function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
+  url: string;
+  thumbnailColor: string;
+  onDoubleTap: () => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const type = getVideoType(url);
+
+  // Gradient background used always as the base layer
+  const Bg = (
+    <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
+  );
+
+  if (type === 'none' || !url) {
+    return (
+      <div className="absolute inset-0" onClick={onDoubleTap}>
+        {Bg}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Play className="w-16 h-16 text-white/20" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!playing) {
+    return (
+      <div className="absolute inset-0" onClick={onDoubleTap}>
+        {Bg}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            onClick={e => { e.stopPropagation(); setPlaying(true); }}
+            className="w-20 h-20 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center hover:scale-110 transition-transform"
+          >
+            <Play className="w-9 h-9 text-white fill-white ml-1" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'youtube') {
+    return (
+      <div className="absolute inset-0 bg-black">
+        {Bg}
+        <iframe
+          src={getYouTubeEmbedUrl(url)}
+          className="absolute inset-0 w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
+  if (type === 'video') {
+    return (
+      <div className="absolute inset-0 bg-black">
+        {Bg}
+        <video
+          src={url}
+          autoPlay
+          controls
+          className="absolute inset-0 w-full h-full object-contain"
+        />
+      </div>
+    );
+  }
+
+  // iframe fallback (SharePoint, Vimeo, etc.)
+  return (
+    <div className="absolute inset-0 bg-black">
+      {Bg}
+      <iframe
+        src={url}
+        className="absolute inset-0 w-full h-full"
+        allowFullScreen
+        allow="autoplay; fullscreen"
+      />
+    </div>
+  );
+}
+
+// ── Feed page ──────────────────────────────────────────────────
 export default function FeedPage() {
   const { videos, likedVideos, savedVideos, followedUsers, toggleLike, toggleSave, toggleFollow, addComment, incrementView } = useData();
   const { user } = useAuth();
@@ -17,7 +118,6 @@ export default function FeedPage() {
   const approvedVideos = videos.filter(v => v.status === 'approved');
 
   const firstVideoId = approvedVideos[0]?.id;
-  // Mark first video as viewed on load
   useEffect(() => {
     if (firstVideoId && !viewedRef.current.has(firstVideoId)) {
       viewedRef.current.add(firstVideoId);
@@ -68,6 +168,7 @@ export default function FeedPage() {
   );
 }
 
+// ── Video card ─────────────────────────────────────────────────
 function VideoCard({
   video,
   isActive,
@@ -116,16 +217,12 @@ function VideoCard({
 
   return (
     <div className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
-      {/* Video Background */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${video.thumbnail_color} flex items-center justify-center`}
-        onClick={handleDoubleTap}
-      >
-        <div className="text-center p-8">
-          <Play className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
-          <p className="text-foreground/30 text-sm">{T.feed.videoPlaceholder}</p>
-        </div>
-      </div>
+      {/* Smart video player */}
+      <VideoPlayer
+        url={video.video_url}
+        thumbnailColor={video.thumbnail_color}
+        onDoubleTap={handleDoubleTap}
+      />
 
       {/* Double tap heart */}
       <AnimatePresence>
@@ -141,11 +238,11 @@ function VideoCard({
         )}
       </AnimatePresence>
 
-      {/* Bottom gradient */}
-      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background/95 via-background/50 to-transparent pointer-events-none" />
+      {/* Bottom gradient overlay */}
+      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background/95 via-background/50 to-transparent pointer-events-none z-10" />
 
       {/* Video info */}
-      <div className="absolute bottom-0 inset-x-0 p-5 pb-24 md:pb-8 z-10">
+      <div className="absolute bottom-0 inset-x-0 p-5 pb-24 md:pb-8 z-20">
         <div className="flex items-end gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">

@@ -28,6 +28,7 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [fileDataUrl, setFileDataUrl] = useState<string>('');
   const [videoLinkUrl, setVideoLinkUrl] = useState('');
   const [uploadMode, setUploadMode] = useState<'file' | 'link'>('file');
 
@@ -48,15 +49,21 @@ export default function UploadPage() {
       setError(T.upload.errorType);
       return;
     }
-    if (file.size > 200 * 1024 * 1024) {
-      setError(T.upload.errorSize);
+    const maxBytes = 40 * 1024 * 1024; // 40 MB max for file uploads
+    if (file.size > maxBytes) {
+      setError('File size must not exceed 40MB for direct uploads. Use a video link for larger files.');
       return;
     }
     setError('');
     setSelectedFile(file);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    // Blob URL for local preview only
+    const blobUrl = URL.createObjectURL(file);
+    setPreviewUrl(blobUrl);
     if (!title) setTitle(file.name.replace(/\.[^/.]+$/, ''));
+    // Convert to base64 data URL so it can be stored in DB and played by all users
+    const reader = new FileReader();
+    reader.onloadend = () => setFileDataUrl(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -78,10 +85,15 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (!user || !title.trim()) return;
+    if (uploadMode === 'file' && selectedFile && !fileDataUrl) {
+      setError('Video is still being processed, please wait a moment and try again.');
+      return;
+    }
     setUploading(true);
     setError('');
     try {
-      const videoUrl = uploadMode === 'link' ? videoLinkUrl : (previewUrl || '');
+      // For file uploads, use the base64 data URL so all users can play it after approval
+      const videoUrl = uploadMode === 'link' ? videoLinkUrl : (fileDataUrl || '');
       await addVideo({
         userId: user.id,
         userName: user.name,
@@ -170,7 +182,7 @@ export default function UploadPage() {
               <div className="relative mb-5 rounded-2xl overflow-hidden bg-black">
                 <video src={previewUrl} controls className="w-full max-h-64 object-contain" />
                 <button
-                  onClick={() => { setSelectedFile(null); setPreviewUrl(''); }}
+                  onClick={() => { setSelectedFile(null); setPreviewUrl(''); setFileDataUrl(''); }}
                   className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
                   data-testid="button-remove-video"
                 >

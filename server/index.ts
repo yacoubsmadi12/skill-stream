@@ -7,7 +7,7 @@ import { seedIfEmpty } from './seed.js';
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '15mb' }));
+app.use(express.json({ limit: '60mb' }));
 
 // ── Categories ────────────────────────────────────────────────
 app.get('/api/categories', async (_req, res) => {
