@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageCircle, Bookmark, Share2, Play, Zap, Send, X } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, Share2, Play, Zap, Send, X, ExternalLink } from 'lucide-react';
 import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLang } from '@/contexts/LangContext';
@@ -39,11 +39,32 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   onDoubleTap: () => void;
 }) {
   const [playing, setPlaying] = useState(false);
+  const [iframeBlocked, setIframeBlocked] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const type = getVideoType(url);
 
   const Bg = (
     <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
   );
+
+  // When iframe loads, check if it has real content (cross-origin: can't read doc, so
+  // we optimistically trust load = success, but cancel the "blocked" timer)
+  const handleIframeLoad = () => {
+    if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
+    setIframeLoaded(true);
+  };
+
+  // Start a short timer when playing begins; if iframe hasn't loaded by then, flag it blocked
+  useEffect(() => {
+    if (playing && type === 'external') {
+      blockTimerRef.current = setTimeout(() => {
+        if (!iframeLoaded) setIframeBlocked(true);
+      }, 5000);
+    }
+    return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current); };
+  }, [playing, type, iframeLoaded]);
 
   if (type === 'none' || !url) {
     return (
@@ -51,30 +72,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
         {Bg}
         <div className="absolute inset-0 flex items-center justify-center">
           <Play className="w-16 h-16 text-white/20" />
-        </div>
-      </div>
-    );
-  }
-
-  // External links (SharePoint, Teams, etc.) cannot be embedded — open in new tab
-  if (type === 'external') {
-    return (
-      <div className="absolute inset-0" onClick={onDoubleTap}>
-        {Bg}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/40 text-white font-semibold text-base hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
-          >
-            <Play className="w-5 h-5 fill-white" />
-            مشاهدة الفيديو
-          </a>
-          <p className="text-white/60 text-xs text-center max-w-[200px] leading-relaxed">
-            سيتم فتح الفيديو في تبويب جديد
-          </p>
         </div>
       </div>
     );
@@ -138,7 +135,63 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     );
   }
 
-  return null;
+  // External link — try to embed, with graceful fallback if blocked
+  if (iframeBlocked) {
+    return (
+      <div className="absolute inset-0" onClick={onDoubleTap}>
+        {Bg}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
+          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-1">
+            <ExternalLink className="w-7 h-7 text-white/80" />
+          </div>
+          <p className="text-white font-semibold text-base text-center">لا يمكن تضمين هذا الفيديو</p>
+          <p className="text-white/50 text-xs text-center max-w-[220px]">الموقع يمنع التضمين. شاهد الفيديو مباشرةً:</p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
+          >
+            <Play className="w-4 h-4 fill-white" />
+            فتح الفيديو
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 bg-black">
+      {Bg}
+      {/* Loading shimmer shown while iframe loads */}
+      {!iframeLoaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+          <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <p className="text-white/60 text-xs">جارٍ تحميل الفيديو...</p>
+        </div>
+      )}
+      <iframe
+        ref={iframeRef}
+        src={url}
+        className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+        allowFullScreen
+        allow="autoplay; fullscreen; encrypted-media"
+        onLoad={handleIframeLoad}
+      />
+      {/* Subtle open-in-new-tab button always available */}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 text-xs hover:text-white hover:bg-black/70 transition-all"
+      >
+        <ExternalLink className="w-3 h-3" />
+        فتح في تبويب
+      </a>
+    </div>
+  );
 }
 
 // ── Feed page ──────────────────────────────────────────────────
