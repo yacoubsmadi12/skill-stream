@@ -94,6 +94,10 @@ export interface PointsHistoryEntry {
   created_at: string;
 }
 
+export interface AppSettings {
+  approval_required: string;
+}
+
 interface DataContextType {
   videos: Video[];
   requests: ServiceRequest[];
@@ -103,6 +107,7 @@ interface DataContextType {
   savedVideos: Set<string>;
   followedUsers: Set<string>;
   pointsHistory: PointsHistoryEntry[];
+  settings: AppSettings;
   loading: boolean;
   toggleLike: (videoId: string) => void;
   toggleSave: (videoId: string) => void;
@@ -121,6 +126,7 @@ interface DataContextType {
   updateProfile: (userId: string, updates: { name?: string; department?: string; bio?: string; skills?: string[]; years_experience?: number; avatar?: string }) => Promise<void>;
   refreshData: () => void;
   loadPointsHistory: (userId: string) => Promise<void>;
+  updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -143,6 +149,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [savedVideos, setSavedVideos] = useState<Set<string>>(new Set());
   const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
   const [pointsHistory, setPointsHistory] = useState<PointsHistoryEntry[]>([]);
+  const [settings, setSettings] = useState<AppSettings>({ approval_required: 'true' });
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -160,22 +167,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [vids, reqs, cats, profs] = await Promise.all([
+      const [vids, reqs, cats, profs, setts] = await Promise.all([
         apiFetch('/api/videos'),
         apiFetch('/api/requests'),
         apiFetch('/api/categories'),
         apiFetch('/api/profiles'),
+        apiFetch('/api/settings'),
       ]);
       setVideos(vids);
       setRequests(reqs);
       setCategories(cats);
       setProfiles(profs);
+      setSettings(setts);
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const updateSettings = async (patch: Partial<AppSettings>) => {
+    const updated = await apiFetch('/api/settings', { method: 'PATCH', body: JSON.stringify(patch) });
+    setSettings(updated);
+  };
 
   // Load persisted follows when we know the user
   useEffect(() => {
@@ -339,13 +353,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return (
     <DataContext.Provider value={{
       videos, requests, categories, profiles,
-      likedVideos, savedVideos, followedUsers, pointsHistory, loading,
+      likedVideos, savedVideos, followedUsers, pointsHistory, settings, loading,
       toggleLike, toggleSave, toggleFollow,
       addComment, addRequest, updateRequestStatus, addRequestMessage, rateRequest,
       updateVideoStatus, deleteVideo, addVideo, addCategory, deleteCategory,
       incrementView, updateProfile,
       refreshData: fetchData,
       loadPointsHistory,
+      updateSettings,
     }}>
       {children}
     </DataContext.Provider>

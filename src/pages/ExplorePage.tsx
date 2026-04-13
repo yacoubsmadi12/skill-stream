@@ -1,14 +1,32 @@
 import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import { useData, Video } from '@/contexts/DataContext';
 import { useLang } from '@/contexts/LangContext';
 import { Input } from '@/components/ui/input';
-import { Search, Users, Video, Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Search, Users, Video as VideoIcon, Sparkles, X, Star, Briefcase, Calendar, Award, Play, Heart, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import VideoPlayer from '@/components/VideoPlayer';
+
+interface UserProfile {
+  user_id: string;
+  name: string;
+  department: string;
+  avatar?: string;
+  bio?: string;
+  rating: number;
+  total_ratings: number;
+  followers: number;
+  videos_count: number;
+  years_experience: number;
+  skills: string[];
+  points?: number;
+}
 
 export default function ExplorePage() {
   const { categories, videos, profiles } = useData();
   const { T } = useLang();
   const [query, setQuery] = useState('');
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
 
   const approvedVideos = videos.filter(v => v.status === 'approved');
 
@@ -29,6 +47,9 @@ export default function ExplorePage() {
       )
     : [];
 
+  const getCategoryIcon = (catName: string) =>
+    categories.find(c => c.name === catName)?.icon || '📁';
+
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
       <div className="max-w-lg mx-auto p-6">
@@ -43,9 +64,17 @@ export default function ExplorePage() {
             placeholder={T.explore.searchPlaceholder}
             className="pl-10 bg-secondary/50 border-border/50 h-12"
           />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Categories */}
+        {/* ── No search: show categories & experts ── */}
         {!query && (
           <>
             <h2 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -73,9 +102,17 @@ export default function ExplorePage() {
             </h2>
             <div className="space-y-3">
               {profiles.map(p => (
-                <div key={p.user_id} className="bg-card rounded-xl border border-border/50 p-4 flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
-                    {p.avatar ? <img src={p.avatar} alt={p.name} className="w-12 h-12 rounded-full object-cover" /> : p.name.charAt(0)}
+                <motion.button
+                  key={p.user_id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => setSelectedProfile(p as UserProfile)}
+                  className="w-full bg-card rounded-xl border border-border/50 p-4 flex items-center gap-3 hover:border-primary/30 transition-colors text-left"
+                >
+                  <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0 overflow-hidden">
+                    {p.avatar
+                      ? <img src={p.avatar} alt={p.name} className="w-12 h-12 rounded-full object-cover" />
+                      : p.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-foreground text-sm">{p.name}</p>
@@ -90,56 +127,302 @@ export default function ExplorePage() {
                     <p className="text-foreground font-bold text-sm">⭐ {p.rating}</p>
                     <p className="text-xs text-muted-foreground">{p.followers} {T.explore.followers}</p>
                   </div>
-                </div>
+                </motion.button>
               ))}
             </div>
           </>
         )}
 
-        {/* Search results */}
+        {/* ── Search results ── */}
         {query && (
           <>
+            {/* People results */}
             {filteredProfiles.length > 0 && (
               <>
                 <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
                   <Users className="w-4 h-4" /> {T.explore.people}
+                  <span className="text-xs bg-secondary px-2 py-0.5 rounded-full">{filteredProfiles.length}</span>
                 </h2>
                 <div className="space-y-2 mb-6">
                   {filteredProfiles.map(p => (
-                    <div key={p.user_id} className="bg-card rounded-xl border border-border/50 p-3 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold">{p.name.charAt(0)}</div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                    <motion.button
+                      key={p.user_id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={() => setSelectedProfile(p as UserProfile)}
+                      className="w-full bg-card rounded-xl border border-border/50 p-3 flex items-center gap-3 hover:border-primary/30 transition-colors text-left group"
+                    >
+                      <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 overflow-hidden">
+                        {p.avatar
+                          ? <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full object-cover" />
+                          : p.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{p.name}</p>
                         <p className="text-xs text-muted-foreground">{p.department}</p>
                       </div>
-                    </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                        <Star className="w-3 h-3 text-warning fill-warning" />
+                        {p.rating}
+                      </div>
+                    </motion.button>
                   ))}
                 </div>
               </>
             )}
 
+            {/* Video results */}
             {filteredVideos.length > 0 && (
               <>
                 <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                  <Video className="w-4 h-4" /> {T.explore.videos}
+                  <VideoIcon className="w-4 h-4" /> {T.explore.videos}
+                  <span className="text-xs bg-secondary px-2 py-0.5 rounded-full">{filteredVideos.length}</span>
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
-                  {filteredVideos.map(v => (
-                    <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end`}>
-                      <p className="text-xs font-semibold text-foreground line-clamp-2">{v.title}</p>
-                      <p className="text-xs text-foreground/70 mt-0.5">{v.user_name}</p>
-                    </div>
+                  {filteredVideos.map((v, i) => (
+                    <motion.button
+                      key={v.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.04 }}
+                      onClick={() => setSelectedVideo(v)}
+                      className="relative aspect-[9/16] rounded-xl overflow-hidden text-left group"
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${v.thumbnail_color}`} />
+
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm border border-white/40 flex items-center justify-center">
+                          <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                        </div>
+                      </div>
+
+                      {/* Category badge */}
+                      <div className="absolute top-2 left-2">
+                        <span className="text-xs bg-black/40 backdrop-blur-sm text-white px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                          <span>{getCategoryIcon(v.category)}</span>
+                          <span className="max-w-[60px] truncate">{v.category}</span>
+                        </span>
+                      </div>
+
+                      {/* Bottom info */}
+                      <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/70 to-transparent">
+                        <p className="text-xs font-semibold text-white line-clamp-2 leading-snug">{v.title}</p>
+                        <p className="text-xs text-white/70 mt-0.5 truncate">{v.user_name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="flex items-center gap-0.5 text-xs text-white/60">
+                            <Heart className="w-3 h-3" /> {v.likes}
+                          </span>
+                          <span className="flex items-center gap-0.5 text-xs text-white/60">
+                            <Eye className="w-3 h-3" /> {v.views}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.button>
                   ))}
                 </div>
               </>
             )}
 
             {filteredVideos.length === 0 && filteredProfiles.length === 0 && (
-              <p className="text-muted-foreground text-center py-12">{T.explore.noResults} "{query}"</p>
+              <div className="text-center py-16">
+                <Search className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground">{T.explore.noResults} "{query}"</p>
+              </div>
             )}
           </>
         )}
       </div>
+
+      {/* ── Video Preview Modal ── */}
+      <AnimatePresence>
+        {selectedVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={e => { if (e.target === e.currentTarget) setSelectedVideo(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-card rounded-2xl border border-border/50 shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border/30">
+                <div className="flex-1 min-w-0 mr-2">
+                  <h3 className="font-display font-bold text-foreground truncate">{selectedVideo.title}</h3>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-xs text-muted-foreground">{selectedVideo.user_name}</p>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
+                      {getCategoryIcon(selectedVideo.category)} {selectedVideo.category}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedVideo(null)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+
+              {/* Video */}
+              <div className="relative aspect-video bg-black">
+                <VideoPlayer
+                  videoUrl={selectedVideo.video_url}
+                  thumbnailColor={selectedVideo.thumbnail_color}
+                />
+              </div>
+
+              {/* Meta */}
+              <div className="p-4">
+                {selectedVideo.description && (
+                  <p className="text-sm text-foreground/80 mb-3 line-clamp-2">{selectedVideo.description}</p>
+                )}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1"><Heart className="w-4 h-4" /> {selectedVideo.likes}</span>
+                    <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {selectedVideo.views}</span>
+                  </div>
+                  {selectedVideo.tags.length > 0 && (
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      {selectedVideo.tags.slice(0, 3).map(t => (
+                        <span key={t} className="text-xs bg-secondary px-2 py-0.5 rounded-full">#{t}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── User Profile Modal ── */}
+      <AnimatePresence>
+        {selectedProfile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center"
+            onClick={e => { if (e.target === e.currentTarget) setSelectedProfile(null); }}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-card w-full md:max-w-md rounded-t-3xl md:rounded-2xl border border-border/50 shadow-2xl max-h-[85vh] overflow-y-auto"
+            >
+              {/* Gradient header */}
+              <div className="gradient-primary p-6 pb-10 relative">
+                <button
+                  onClick={() => setSelectedProfile(null)}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+
+              {/* Avatar overlap */}
+              <div className="px-6 -mt-8 relative z-10">
+                <div className="flex items-end gap-4 mb-4">
+                  <div className="w-16 h-16 rounded-2xl border-2 border-card overflow-hidden gradient-primary flex items-center justify-center text-primary-foreground text-xl font-bold shrink-0">
+                    {selectedProfile.avatar
+                      ? <img src={selectedProfile.avatar} alt={selectedProfile.name} className="w-full h-full object-cover" />
+                      : selectedProfile.name.charAt(0)}
+                  </div>
+                  <div className="mb-2">
+                    <h2 className="text-lg font-display font-bold text-foreground">{selectedProfile.name}</h2>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      {selectedProfile.department}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rating */}
+                <div className="flex items-center gap-1 mb-4">
+                  <Star className="w-4 h-4 text-warning fill-warning" />
+                  <span className="font-semibold text-foreground text-sm">{selectedProfile.rating}</span>
+                  <span className="text-muted-foreground text-xs">({selectedProfile.total_ratings} {T.explore.ratings || 'ratings'})</span>
+                </div>
+
+                {/* Bio */}
+                {selectedProfile.bio && (
+                  <p className="text-sm text-foreground/80 mb-4">{selectedProfile.bio}</p>
+                )}
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[
+                    { icon: VideoIcon, label: T.profile.videos, value: selectedProfile.videos_count },
+                    { icon: Users, label: T.profile.followers, value: selectedProfile.followers },
+                    { icon: Calendar, label: T.profile.experience, value: `${selectedProfile.years_experience}${T.profile.yr}` },
+                  ].map(s => (
+                    <div key={s.label} className="text-center p-3 bg-secondary/30 rounded-xl">
+                      <s.icon className="w-4 h-4 text-primary mx-auto mb-1" />
+                      <p className="text-foreground font-bold text-base">{s.value}</p>
+                      <p className="text-muted-foreground text-xs">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Skills */}
+                {selectedProfile.skills?.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-primary" /> {T.profile.skills}
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProfile.skills.map(s => (
+                        <span key={s} className="text-xs bg-primary/15 text-primary px-3 py-1.5 rounded-full font-medium">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Their videos */}
+                {(() => {
+                  const userVideos = videos.filter(v => v.user_id === selectedProfile.user_id && v.status === 'approved');
+                  if (!userVideos.length) return null;
+                  return (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                        <VideoIcon className="w-4 h-4 text-primary" /> فيديوهات {selectedProfile.name}
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        {userVideos.slice(0, 4).map(v => (
+                          <button
+                            key={v.id}
+                            onClick={() => { setSelectedProfile(null); setTimeout(() => setSelectedVideo(v), 200); }}
+                            className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-2 flex flex-col justify-end relative group overflow-hidden`}
+                          >
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Play className="w-8 h-8 text-white fill-white" />
+                            </div>
+                            <div className="absolute top-1.5 left-1.5">
+                              <span className="text-xs bg-black/40 text-white px-1.5 py-0.5 rounded-full">
+                                {getCategoryIcon(v.category)}
+                              </span>
+                            </div>
+                            <p className="text-xs font-semibold text-white line-clamp-2 relative z-10">{v.title}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -9,6 +9,17 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '60mb' }));
 
+// ── In-memory settings ─────────────────────────────────────────
+const settings: Record<string, string> = {
+  approval_required: 'true', // 'true' = videos need approval, 'false' = auto-publish
+};
+
+app.get('/api/settings', (_req, res) => res.json(settings));
+app.patch('/api/settings', (req, res) => {
+  Object.assign(settings, req.body);
+  res.json(settings);
+});
+
 // ── Points helper ──────────────────────────────────────────────
 async function awardPoints(userId: string, action: string, points: number, description: string) {
   await db.insert(points_history).values({ user_id: userId, action, points, description });
