@@ -212,7 +212,7 @@ export default function UploadPage() {
               if (isYT || isVimeo || isDirect) {
                 return <p className="text-xs text-emerald-400 mt-1.5">✓ سيتم تشغيل الفيديو مباشرة داخل التطبيق</p>;
               }
-              return <p className="text-xs text-amber-400 mt-1.5">⚠ سيتم فتح هذا الرابط في تبويب جديد عند المشاهدة (SharePoint، Teams، إلخ)</p>;
+              return <p className="text-xs text-amber-400 mt-1.5">⚠ سيحاول الموقع تضمين هذا الرابط — إن لم ينجح سيظهر زر لفتحه في تبويب جديد</p>;
             })()}
           </div>
         )}

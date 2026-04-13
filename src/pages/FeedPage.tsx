@@ -11,18 +11,26 @@ import RequestDialog from '@/components/RequestDialog';
 // ── Video URL helpers ──────────────────────────────────────────
 function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' | 'none' {
   if (!url) return 'none';
-  if (url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/)) return 'youtube';
-  if (url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)/)) return 'vimeo';
+  // Match ANY youtube.com or youtu.be URL
+  if (url.match(/(?:youtube\.com|youtu\.be)/)) return 'youtube';
+  if (url.match(/(?:vimeo\.com|player\.vimeo\.com)/)) return 'vimeo';
   if (url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i)) return 'video';
   if (url.startsWith('http') || url.startsWith('https')) return 'external';
   return 'none';
 }
 
 function getYouTubeEmbedUrl(url: string): string {
-  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+  // watch?v=
+  const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+  // youtu.be/ID
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
-  const id = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || '';
+  // /embed/ID
+  const embedMatch = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
+  // /shorts/ID
+  const shortsMatch = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+  // /live/ID
+  const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]+)/);
+  const id = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || shortsMatch?.[1] || liveMatch?.[1] || '';
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
 }
 
