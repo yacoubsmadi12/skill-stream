@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { db } from './db.js';
 import { categories, comments, profiles, request_messages, service_requests, videos } from './schema.js';
-import { eq, desc, asc } from 'drizzle-orm';
+import { eq, desc, asc, sql } from 'drizzle-orm';
 import { seedIfEmpty } from './seed.js';
 
 const app = express();
@@ -74,7 +74,7 @@ app.post('/api/videos', async (req, res) => {
       status: v.status,
     }).returning();
     // Bump user videos_count
-    await db.execute(`UPDATE profiles SET videos_count = videos_count + 1 WHERE user_id = '${v.userId}'`);
+    await db.update(profiles).set({ videos_count: sql`videos_count + 1` }).where(eq(profiles.user_id, v.userId));
     res.json({ ...row, comments: [] });
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -93,7 +93,7 @@ app.patch('/api/videos/:id', async (req, res) => {
 app.post('/api/videos/:id/view', async (req, res) => {
   try {
     const [row] = await db.update(videos)
-      .set({ views: (await db.select({ views: videos.views }).from(videos).where(eq(videos.id, req.params.id)))[0]?.views + 1 || 1 })
+      .set({ views: sql`views + 1` })
       .where(eq(videos.id, req.params.id))
       .returning();
     res.json(row);
@@ -106,7 +106,9 @@ app.delete('/api/videos/:id', async (req, res) => {
   try {
     const [vid] = await db.select().from(videos).where(eq(videos.id, req.params.id));
     if (vid) {
-      await db.execute(`UPDATE profiles SET videos_count = GREATEST(videos_count - 1, 0) WHERE user_id = '${vid.user_id}'`);
+      await db.update(profiles)
+        .set({ videos_count: sql`GREATEST(videos_count - 1, 0)` })
+        .where(eq(profiles.user_id, vid.user_id));
     }
     await db.delete(videos).where(eq(videos.id, req.params.id));
     res.json({ ok: true });
