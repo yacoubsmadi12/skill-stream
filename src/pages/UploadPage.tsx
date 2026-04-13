@@ -197,7 +197,7 @@ export default function UploadPage() {
           </>
         ) : (
           <div className="mb-5">
-            <label className="text-sm text-muted-foreground mb-2 block">Video Link (YouTube, SharePoint, etc.)</label>
+            <label className="text-sm text-muted-foreground mb-2 block">رابط الفيديو</label>
             <Input
               value={videoLinkUrl}
               onChange={e => setVideoLinkUrl(e.target.value)}
@@ -205,6 +205,15 @@ export default function UploadPage() {
               className="bg-secondary/50 border-border/50 h-12"
               data-testid="input-video-url"
             />
+            {videoLinkUrl && (() => {
+              const isYT = videoLinkUrl.match(/(?:youtube\.com|youtu\.be)/);
+              const isVimeo = videoLinkUrl.match(/vimeo\.com/);
+              const isDirect = videoLinkUrl.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i);
+              if (isYT || isVimeo || isDirect) {
+                return <p className="text-xs text-emerald-400 mt-1.5">✓ سيتم تشغيل الفيديو مباشرة داخل التطبيق</p>;
+              }
+              return <p className="text-xs text-amber-400 mt-1.5">⚠ سيتم فتح هذا الرابط في تبويب جديد عند المشاهدة (SharePoint، Teams، إلخ)</p>;
+            })()}
           </div>
         )}
 

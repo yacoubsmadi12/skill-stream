@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import RequestDialog from '@/components/RequestDialog';
 
 // ── Video URL helpers ──────────────────────────────────────────
-function getVideoType(url: string): 'youtube' | 'video' | 'iframe' | 'none' {
+function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' | 'none' {
   if (!url) return 'none';
   if (url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)/)) return 'youtube';
+  if (url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)/)) return 'vimeo';
   if (url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i)) return 'video';
-  if (url.startsWith('http') || url.startsWith('https')) return 'iframe';
+  if (url.startsWith('http') || url.startsWith('https')) return 'external';
   return 'none';
 }
 
@@ -25,6 +26,12 @@ function getYouTubeEmbedUrl(url: string): string {
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
 }
 
+function getVimeoEmbedUrl(url: string): string {
+  const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const id = match?.[1] || '';
+  return `https://player.vimeo.com/video/${id}?autoplay=1`;
+}
+
 // ── Smart video player ─────────────────────────────────────────
 function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   url: string;
@@ -34,7 +41,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   const [playing, setPlaying] = useState(false);
   const type = getVideoType(url);
 
-  // Gradient background used always as the base layer
   const Bg = (
     <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
   );
@@ -45,6 +51,30 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
         {Bg}
         <div className="absolute inset-0 flex items-center justify-center">
           <Play className="w-16 h-16 text-white/20" />
+        </div>
+      </div>
+    );
+  }
+
+  // External links (SharePoint, Teams, etc.) cannot be embedded — open in new tab
+  if (type === 'external') {
+    return (
+      <div className="absolute inset-0" onClick={onDoubleTap}>
+        {Bg}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/40 text-white font-semibold text-base hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
+          >
+            <Play className="w-5 h-5 fill-white" />
+            مشاهدة الفيديو
+          </a>
+          <p className="text-white/60 text-xs text-center max-w-[200px] leading-relaxed">
+            سيتم فتح الفيديو في تبويب جديد
+          </p>
         </div>
       </div>
     );
@@ -80,6 +110,20 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     );
   }
 
+  if (type === 'vimeo') {
+    return (
+      <div className="absolute inset-0 bg-black">
+        {Bg}
+        <iframe
+          src={getVimeoEmbedUrl(url)}
+          className="absolute inset-0 w-full h-full"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   if (type === 'video') {
     return (
       <div className="absolute inset-0 bg-black">
@@ -94,18 +138,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     );
   }
 
-  // iframe fallback (SharePoint, Vimeo, etc.)
-  return (
-    <div className="absolute inset-0 bg-black">
-      {Bg}
-      <iframe
-        src={url}
-        className="absolute inset-0 w-full h-full"
-        allowFullScreen
-        allow="autoplay; fullscreen"
-      />
-    </div>
-  );
+  return null;
 }
 
 // ── Feed page ──────────────────────────────────────────────────
