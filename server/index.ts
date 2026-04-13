@@ -3,6 +3,7 @@ import cors from 'cors';
 import { db } from './db.js';
 import { categories, comments, profiles, request_messages, service_requests, videos } from './schema.js';
 import { eq, desc, asc } from 'drizzle-orm';
+import { seedIfEmpty } from './seed.js';
 
 const app = express();
 app.use(cors());
@@ -72,6 +73,8 @@ app.post('/api/videos', async (req, res) => {
       thumbnail_color: v.thumbnailColor,
       status: v.status,
     }).returning();
+    // Bump user videos_count
+    await db.execute(`UPDATE profiles SET videos_count = videos_count + 1 WHERE user_id = '${v.userId}'`);
     res.json({ ...row, comments: [] });
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -87,8 +90,24 @@ app.patch('/api/videos/:id', async (req, res) => {
   }
 });
 
+app.post('/api/videos/:id/view', async (req, res) => {
+  try {
+    const [row] = await db.update(videos)
+      .set({ views: (await db.select({ views: videos.views }).from(videos).where(eq(videos.id, req.params.id)))[0]?.views + 1 || 1 })
+      .where(eq(videos.id, req.params.id))
+      .returning();
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 app.delete('/api/videos/:id', async (req, res) => {
   try {
+    const [vid] = await db.select().from(videos).where(eq(videos.id, req.params.id));
+    if (vid) {
+      await db.execute(`UPDATE profiles SET videos_count = GREATEST(videos_count - 1, 0) WHERE user_id = '${vid.user_id}'`);
+    }
     await db.delete(videos).where(eq(videos.id, req.params.id));
     res.json({ ok: true });
   } catch (e) {
@@ -125,7 +144,35 @@ app.get('/api/profiles', async (_req, res) => {
 app.post('/api/profiles', async (req, res) => {
   try {
     const p = req.body;
-    const [row] = await db.insert(profiles).values(p).returning();
+    const [row] = await db.insert(profiles).values(p).onConflictDoNothing().returning();
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Upsert profile (create if not exists)
+app.post('/api/profiles/upsert', async (req, res) => {
+  try {
+    const { userId, name, department } = req.body;
+    const existing = await db.select().from(profiles).where(eq(profiles.user_id, userId));
+    if (existing.length > 0) {
+      return res.json(existing[0]);
+    }
+    const [row] = await db.insert(profiles).values({
+      user_id: userId,
+      name,
+      department: department || '',
+    }).returning();
+    return res.json(row);
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
+app.patch('/api/profiles/:userId', async (req, res) => {
+  try {
+    const [row] = await db.update(profiles).set(req.body).where(eq(profiles.user_id, req.params.userId)).returning();
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -197,7 +244,11 @@ app.post('/api/requests/:id/messages', async (req, res) => {
   }
 });
 
+// ── Health check ──────────────────────────────────────────────
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
 const PORT = parseInt(process.env.PORT || '3001');
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server running on port ${PORT}`);
+  await seedIfEmpty();
 });

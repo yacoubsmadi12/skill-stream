@@ -11,6 +11,22 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+async function upsertProfile(user: AuthUser) {
+  try {
+    await fetch('/api/profiles/upsert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        name: user.name,
+        department: user.department,
+      }),
+    });
+  } catch {
+    // non-critical
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = getStoredUser();
     setUser(stored);
+    if (stored) upsertProfile(stored);
     setLoading(false);
   }, []);
 
@@ -26,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (result) {
       setUser(result);
       storeUser(result);
+      await upsertProfile(result);
       return true;
     }
     return false;

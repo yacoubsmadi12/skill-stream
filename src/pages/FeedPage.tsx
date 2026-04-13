@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Bookmark, Share2, Play, UserPlus, Zap, Send, X } from 'lucide-react';
 import { useData, Video } from '@/contexts/DataContext';
@@ -8,19 +8,39 @@ import { Input } from '@/components/ui/input';
 import RequestDialog from '@/components/RequestDialog';
 
 export default function FeedPage() {
-  const { videos, likedVideos, savedVideos, followedUsers, toggleLike, toggleSave, toggleFollow, addComment } = useData();
+  const { videos, likedVideos, savedVideos, followedUsers, toggleLike, toggleSave, toggleFollow, addComment, incrementView } = useData();
   const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewedRef = useRef<Set<string>>(new Set());
   const approvedVideos = videos.filter(v => v.status === 'approved');
+
+  const firstVideoId = approvedVideos[0]?.id;
+  // Mark first video as viewed on load
+  useEffect(() => {
+    if (firstVideoId && !viewedRef.current.has(firstVideoId)) {
+      viewedRef.current.add(firstVideoId);
+      incrementView(firstVideoId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstVideoId]);
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const scrollTop = containerRef.current.scrollTop;
     const height = containerRef.current.clientHeight;
     const idx = Math.round(scrollTop / height);
-    setCurrentIndex(idx);
-  }, []);
+    setCurrentIndex(prev => {
+      if (idx !== prev) {
+        const vid = approvedVideos[idx];
+        if (vid && !viewedRef.current.has(vid.id)) {
+          viewedRef.current.add(vid.id);
+          incrementView(vid.id);
+        }
+      }
+      return idx;
+    });
+  }, [approvedVideos, incrementView]);
 
   return (
     <div

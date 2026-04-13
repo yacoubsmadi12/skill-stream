@@ -106,6 +106,7 @@ interface DataContextType {
   addVideo: (video: { userId: string; userName: string; userAvatar: string; userDepartment: string; title: string; description: string; tags: string[]; category: string; videoUrl: string; thumbnailColor: string; status: string }) => void;
   addCategory: (name: string, icon: string) => void;
   deleteCategory: (id: string) => void;
+  incrementView: (videoId: string) => void;
   refreshData: () => void;
 }
 
@@ -259,6 +260,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setCategories(prev => prev.filter(c => c.id !== id));
   };
 
+  const incrementView = (videoId: string) => {
+    apiFetch(`/api/videos/${videoId}/view`, { method: 'POST' }).catch(console.error);
+    setVideos(prev => prev.map(v => v.id === videoId ? { ...v, views: v.views + 1 } : v));
+  };
+
   return (
     <DataContext.Provider value={{
       videos, requests, categories, profiles,
@@ -266,6 +272,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       toggleLike, toggleSave, toggleFollow,
       addComment, addRequest, updateRequestStatus, addRequestMessage, rateRequest,
       updateVideoStatus, deleteVideo, addVideo, addCategory, deleteCategory,
+      incrementView,
       refreshData: fetchData,
     }}>
       {children}
