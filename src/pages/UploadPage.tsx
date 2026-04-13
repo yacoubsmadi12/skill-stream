@@ -110,8 +110,8 @@ export default function UploadPage() {
           <div className="w-20 h-20 gradient-primary rounded-full flex items-center justify-center mx-auto mb-4 shadow-glow">
             <CheckCircle className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-xl font-display font-bold text-foreground mb-2">تم رفع الفيديو بنجاح!</h2>
-          <p className="text-muted-foreground text-sm">الفيديو بانتظار مراجعة الإدارة قبل النشر</p>
+          <h2 className="text-xl font-display font-bold text-foreground mb-2">{T.upload.success}</h2>
+          <p className="text-muted-foreground text-sm">{T.upload.successSub}</p>
         </motion.div>
       </div>
     );
@@ -120,7 +120,7 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
       <div className="max-w-lg mx-auto p-6">
-        <h1 className="text-2xl font-display font-bold text-foreground mb-6">رفع فيديو</h1>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.upload.title}</h1>
 
         {/* Upload mode toggle */}
         <div className="flex gap-2 mb-5 p-1 bg-secondary/40 rounded-xl">
@@ -131,7 +131,7 @@ export default function UploadPage() {
             }`}
             data-testid="tab-upload-file"
           >
-            <Upload className="w-4 h-4" /> رفع ملف
+            <Upload className="w-4 h-4" /> {T.upload.uploadFile}
           </button>
           <button
             onClick={() => setUploadMode('link')}
@@ -140,13 +140,12 @@ export default function UploadPage() {
             }`}
             data-testid="tab-upload-link"
           >
-            <Link className="w-4 h-4" /> رابط فيديو
+            <Link className="w-4 h-4" /> {T.upload.videoLink}
           </button>
         </div>
 
         {uploadMode === 'file' ? (
           <>
-            {/* File drop zone */}
             {!previewUrl ? (
               <div
                 onDrop={handleDrop}
@@ -156,8 +155,8 @@ export default function UploadPage() {
                 data-testid="upload-dropzone"
               >
                 <Upload className="w-12 h-12 text-muted-foreground group-hover:text-primary mx-auto mb-3 transition-colors" />
-                <p className="text-foreground font-medium mb-1">اضغط أو اسحب ملف الفيديو هنا</p>
-                <p className="text-muted-foreground text-sm">MP4، MOV، AVI — حتى 200MB</p>
+                <p className="text-foreground font-medium mb-1">{T.upload.dropzone}</p>
+                <p className="text-muted-foreground text-sm">{T.upload.dropzoneHint}</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -169,11 +168,7 @@ export default function UploadPage() {
               </div>
             ) : (
               <div className="relative mb-5 rounded-2xl overflow-hidden bg-black">
-                <video
-                  src={previewUrl}
-                  controls
-                  className="w-full max-h-64 object-contain"
-                />
+                <video src={previewUrl} controls className="w-full max-h-64 object-contain" />
                 <button
                   onClick={() => { setSelectedFile(null); setPreviewUrl(''); }}
                   className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
@@ -190,11 +185,11 @@ export default function UploadPage() {
           </>
         ) : (
           <div className="mb-5">
-            <label className="text-sm text-muted-foreground mb-2 block">رابط الفيديو (YouTube، SharePoint، إلخ)</label>
+            <label className="text-sm text-muted-foreground mb-2 block">Video Link (YouTube, SharePoint, etc.)</label>
             <Input
               value={videoLinkUrl}
               onChange={e => setVideoLinkUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder={T.upload.linkPlaceholder}
               className="bg-secondary/50 border-border/50 h-12"
               data-testid="input-video-url"
             />
@@ -210,11 +205,11 @@ export default function UploadPage() {
         <div className="space-y-5">
           {/* Title */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">العنوان *</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{T.upload.videoTitle}</label>
             <Input
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="عنوان الفيديو"
+              placeholder={T.upload.videoTitle}
               className="bg-secondary/50 border-border/50 h-12"
               data-testid="input-video-title"
             />
@@ -222,11 +217,11 @@ export default function UploadPage() {
 
           {/* Description */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">الوصف</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{T.upload.description}</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="عمَّ يتحدث الفيديو؟"
+              placeholder={T.upload.descPlaceholder}
               className="w-full bg-secondary/50 border border-border/50 rounded-lg p-3 text-foreground text-sm resize-none h-24 focus:border-primary focus:outline-none"
               data-testid="input-video-description"
             />
@@ -234,14 +229,14 @@ export default function UploadPage() {
 
           {/* Category */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">التصنيف</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{T.upload.category}</label>
             <select
               value={category}
               onChange={e => setCategory(e.target.value)}
               className="w-full bg-secondary/50 border border-border/50 rounded-lg p-3 text-foreground text-sm h-12"
               data-testid="select-category"
             >
-              <option value="">اختر تصنيفاً</option>
+              <option value="">{T.upload.selectCategory}</option>
               {categories.map(c => (
                 <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
               ))}
@@ -250,12 +245,12 @@ export default function UploadPage() {
 
           {/* Tags */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">الوسوم</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{T.upload.tags}</label>
             <div className="flex gap-2 mb-2">
               <Input
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
-                placeholder="أضف وسماً..."
+                placeholder={T.upload.addTag}
                 className="bg-secondary/50 border-border/50"
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())}
                 data-testid="input-tag"
@@ -278,7 +273,7 @@ export default function UploadPage() {
 
           {/* Thumbnail color picker */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">لون الغلاف</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{T.upload.thumbnailColor}</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map(c => (
                 <button
@@ -295,9 +290,9 @@ export default function UploadPage() {
 
           {/* Preview tile */}
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">معاينة البطاقة</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{T.upload.cardPreview}</label>
             <div className={`h-28 rounded-xl bg-gradient-to-br ${selectedColor} p-4 flex flex-col justify-end`}>
-              <p className="text-sm font-bold text-white line-clamp-2">{title || 'عنوان الفيديو'}</p>
+              <p className="text-sm font-bold text-white line-clamp-2">{title || T.upload.videoTitle}</p>
               <p className="text-xs text-white/70 mt-0.5">{user?.name}</p>
             </div>
           </div>
@@ -310,11 +305,11 @@ export default function UploadPage() {
           >
             {uploading ? (
               <span className="flex items-center gap-2">
-                <Video className="w-5 h-5 animate-pulse" /> جاري الرفع...
+                <Video className="w-5 h-5 animate-pulse" /> {T.upload.uploading}
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <Upload className="w-5 h-5" /> رفع وإرسال للمراجعة
+                <Upload className="w-5 h-5" /> {T.upload.submit}
               </span>
             )}
           </Button>
