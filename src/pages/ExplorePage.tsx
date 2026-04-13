@@ -14,7 +14,7 @@ export default function ExplorePage() {
     ? approvedVideos.filter(v =>
         v.title.toLowerCase().includes(query.toLowerCase()) ||
         v.tags.some(t => t.toLowerCase().includes(query.toLowerCase())) ||
-        v.userName.toLowerCase().includes(query.toLowerCase()) ||
+        v.user_name.toLowerCase().includes(query.toLowerCase()) ||
         v.category.toLowerCase().includes(query.toLowerCase())
       )
     : [];
@@ -71,13 +71,13 @@ export default function ExplorePage() {
             </h2>
             <div className="space-y-3">
               {profiles.map(p => (
-                <div key={p.userId} className="bg-card rounded-xl border border-border/50 p-4 flex items-center gap-3">
+                <div key={p.user_id} className="bg-card rounded-xl border border-border/50 p-4 flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
                     {p.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-foreground text-sm">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.department} • {p.yearsExperience}y exp</p>
+                    <p className="text-xs text-muted-foreground">{p.department} • {p.years_experience}y exp</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {p.skills.slice(0, 3).map(s => (
                         <span key={s} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s}</span>
@@ -104,7 +104,7 @@ export default function ExplorePage() {
                 </h2>
                 <div className="space-y-2 mb-6">
                   {filteredProfiles.map(p => (
-                    <div key={p.userId} className="bg-card rounded-xl border border-border/50 p-3 flex items-center gap-3">
+                    <div key={p.user_id} className="bg-card rounded-xl border border-border/50 p-3 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold">{p.name.charAt(0)}</div>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{p.name}</p>
@@ -123,9 +123,9 @@ export default function ExplorePage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {filteredVideos.map(v => (
-                    <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnailColor} p-3 flex flex-col justify-end`}>
+                    <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end`}>
                       <p className="text-xs font-semibold text-foreground line-clamp-2">{v.title}</p>
-                      <p className="text-xs text-foreground/70 mt-0.5">{v.userName}</p>
+                      <p className="text-xs text-foreground/70 mt-0.5">{v.user_name}</p>
                     </div>
                   ))}
                 </div>

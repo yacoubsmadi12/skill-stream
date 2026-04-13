@@ -124,7 +124,7 @@ export default function AdminPage() {
                   {videos.slice(0, 5).map(v => (
                     <div key={v.id} className="flex items-center gap-3 text-sm">
                       <div className={`w-2 h-2 rounded-full ${v.status === 'approved' ? 'bg-success' : v.status === 'pending' ? 'bg-warning' : 'bg-destructive'}`} />
-                      <span className="text-foreground">{v.userName}</span>
+                      <span className="text-foreground">{v.user_name}</span>
                       <span className="text-muted-foreground">uploaded</span>
                       <span className="text-foreground font-medium truncate">{v.title}</span>
                       <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${v.status === 'approved' ? 'bg-success/15 text-success' : v.status === 'pending' ? 'bg-warning/15 text-warning' : 'bg-destructive/15 text-destructive'}`}>
@@ -152,7 +152,7 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {profiles.map(p => (
-                      <tr key={p.userId} className="border-b border-border/30 last:border-0">
+                      <tr key={p.user_id} className="border-b border-border/30 last:border-0">
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-xs font-bold">{p.name.charAt(0)}</div>
@@ -164,7 +164,7 @@ export default function AdminPage() {
                         </td>
                         <td className="p-4 text-sm text-foreground hidden md:table-cell">{p.department}</td>
                         <td className="p-4 text-sm text-foreground">⭐ {p.rating}</td>
-                        <td className="p-4 text-sm text-foreground hidden md:table-cell">{p.videosCount}</td>
+                        <td className="p-4 text-sm text-foreground hidden md:table-cell">{p.videos_count}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -179,10 +179,10 @@ export default function AdminPage() {
               <div className="space-y-3">
                 {videos.map(v => (
                   <div key={v.id} className="bg-card rounded-xl border border-border/50 p-4 flex items-center gap-4">
-                    <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${v.thumbnailColor} shrink-0`} />
+                    <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${v.thumbnail_color} shrink-0`} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-foreground text-sm">{v.title}</p>
-                      <p className="text-xs text-muted-foreground">{v.userName} • {v.category}</p>
+                      <p className="text-xs text-muted-foreground">{v.user_name} • {v.category}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">❤️ {v.likes}</span>
                         <span className="text-xs text-muted-foreground">👁️ {v.views}</span>
@@ -219,7 +219,7 @@ export default function AdminPage() {
                 {requests.map(r => (
                   <div key={r.id} className="bg-card rounded-xl border border-border/50 p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-foreground text-sm">{r.videoTitle}</p>
+                      <p className="font-semibold text-foreground text-sm">{r.video_title}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
                         r.status === 'accepted' ? 'bg-success/15 text-success' :
                         r.status === 'pending' ? 'bg-warning/15 text-warning' :
@@ -227,7 +227,7 @@ export default function AdminPage() {
                         'bg-destructive/15 text-destructive'
                       }`}>{r.status}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{r.fromUserName} → {r.toUserName}</p>
+                    <p className="text-xs text-muted-foreground">{r.from_user_name} → {r.to_user_name}</p>
                     <p className="text-sm text-foreground/80 mt-1">{r.description}</p>
                     <div className="flex gap-2 mt-2 text-xs">
                       <span className="bg-secondary px-2 py-0.5 rounded text-secondary-foreground capitalize">{r.type}</span>
