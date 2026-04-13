@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Bookmark, Share2, Play, UserPlus, Zap, Send, X } from 'lucide-react';
 import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLang } from '@/contexts/LangContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import RequestDialog from '@/components/RequestDialog';
@@ -90,6 +91,7 @@ function VideoCard({
   onComment: (text: string) => void;
   currentUserId: string;
 }) {
+  const { T } = useLang();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showRequest, setShowRequest] = useState(false);
@@ -121,7 +123,7 @@ function VideoCard({
       >
         <div className="text-center p-8">
           <Play className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
-          <p className="text-foreground/30 text-sm">Video Player Placeholder</p>
+          <p className="text-foreground/30 text-sm">{T.feed.videoPlaceholder}</p>
         </div>
       </div>
 
@@ -161,7 +163,7 @@ function VideoCard({
                   onClick={onFollow}
                   className={`h-7 text-xs px-3 ${!isFollowing ? 'gradient-primary text-primary-foreground' : ''}`}
                 >
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {isFollowing ? T.feed.following : T.feed.follow}
                 </Button>
               )}
             </div>
@@ -203,11 +205,11 @@ function VideoCard({
             className="absolute inset-x-0 bottom-0 h-[60%] bg-card rounded-t-3xl z-30 border-t border-border/50 flex flex-col"
           >
             <div className="flex items-center justify-between p-4 border-b border-border/30">
-              <h3 className="font-display font-semibold text-foreground">Comments ({video.comments.length})</h3>
+              <h3 className="font-display font-semibold text-foreground">{T.feed.comments} ({video.comments.length})</h3>
               <button onClick={() => setShowComments(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {video.comments.length === 0 && <p className="text-muted-foreground text-sm text-center pt-8">No comments yet</p>}
+              {video.comments.length === 0 && <p className="text-muted-foreground text-sm text-center pt-8">{T.feed.noComments}</p>}
               {video.comments.map(c => (
                 <div key={c.id} className="flex gap-3">
                   <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-bold text-secondary-foreground shrink-0">
@@ -224,7 +226,7 @@ function VideoCard({
               <Input
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment..."
+                placeholder={T.feed.addComment}
                 className="bg-secondary/50 border-border/50"
                 onKeyDown={(e) => e.key === 'Enter' && submitComment()}
               />

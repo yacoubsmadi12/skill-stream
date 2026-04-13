@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
+import { useLang } from '@/contexts/LangContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
@@ -21,6 +22,7 @@ const COLORS = [
 export default function UploadPage() {
   const { user } = useAuth();
   const { addVideo, categories } = useData();
+  const { T } = useLang();
   const navigate = useNavigate();
 
   const fileInputRef = useRef<HTMLInputElement>(null);

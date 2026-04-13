@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { useLang } from '@/contexts/LangContext';
 import { Input } from '@/components/ui/input';
 import { Search, Users, Video, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ExplorePage() {
   const { categories, videos, profiles } = useData();
+  const { T } = useLang();
   const [query, setQuery] = useState('');
 
   const approvedVideos = videos.filter(v => v.status === 'approved');
@@ -30,7 +32,7 @@ export default function ExplorePage() {
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
       <div className="max-w-lg mx-auto p-6">
-        <h1 className="text-2xl font-display font-bold text-foreground mb-6">Explore</h1>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-6">{T.explore.title}</h1>
 
         {/* Search */}
         <div className="relative mb-6">
@@ -38,7 +40,7 @@ export default function ExplorePage() {
           <Input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search skills, people, topics..."
+            placeholder={T.explore.searchPlaceholder}
             className="pl-10 bg-secondary/50 border-border/50 h-12"
           />
         </div>
@@ -47,7 +49,7 @@ export default function ExplorePage() {
         {!query && (
           <>
             <h2 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" /> Categories
+              <Sparkles className="w-5 h-5 text-primary" /> {T.explore.categories}
             </h2>
             <div className="grid grid-cols-2 gap-3 mb-8">
               {categories.map((c, i) => (
@@ -67,17 +69,17 @@ export default function ExplorePage() {
             </div>
 
             <h2 className="text-lg font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" /> Top Experts
+              <Users className="w-5 h-5 text-primary" /> {T.explore.topExperts}
             </h2>
             <div className="space-y-3">
               {profiles.map(p => (
                 <div key={p.user_id} className="bg-card rounded-xl border border-border/50 p-4 flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">
-                    {p.name.charAt(0)}
+                    {p.avatar ? <img src={p.avatar} alt={p.name} className="w-12 h-12 rounded-full object-cover" /> : p.name.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-foreground text-sm">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.department} • {p.years_experience}y exp</p>
+                    <p className="text-xs text-muted-foreground">{p.department} • {p.years_experience} {T.explore.exp}</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {p.skills.slice(0, 3).map(s => (
                         <span key={s} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s}</span>
@@ -86,7 +88,7 @@ export default function ExplorePage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-foreground font-bold text-sm">⭐ {p.rating}</p>
-                    <p className="text-xs text-muted-foreground">{p.followers} followers</p>
+                    <p className="text-xs text-muted-foreground">{p.followers} {T.explore.followers}</p>
                   </div>
                 </div>
               ))}
@@ -100,7 +102,7 @@ export default function ExplorePage() {
             {filteredProfiles.length > 0 && (
               <>
                 <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4" /> People
+                  <Users className="w-4 h-4" /> {T.explore.people}
                 </h2>
                 <div className="space-y-2 mb-6">
                   {filteredProfiles.map(p => (
@@ -119,7 +121,7 @@ export default function ExplorePage() {
             {filteredVideos.length > 0 && (
               <>
                 <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                  <Video className="w-4 h-4" /> Videos
+                  <Video className="w-4 h-4" /> {T.explore.videos}
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {filteredVideos.map(v => (
@@ -133,7 +135,7 @@ export default function ExplorePage() {
             )}
 
             {filteredVideos.length === 0 && filteredProfiles.length === 0 && (
-              <p className="text-muted-foreground text-center py-12">No results for "{query}"</p>
+              <p className="text-muted-foreground text-center py-12">{T.explore.noResults} "{query}"</p>
             )}
           </>
         )}

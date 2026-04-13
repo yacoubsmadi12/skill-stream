@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
+import { LangProvider } from "@/contexts/LangContext";
 import LoginPage from "@/pages/LoginPage";
 import FeedPage from "@/pages/FeedPage";
 import ExplorePage from "@/pages/ExplorePage";
@@ -62,9 +63,11 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
+        <LangProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </LangProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

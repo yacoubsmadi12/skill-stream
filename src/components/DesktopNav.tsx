@@ -1,17 +1,19 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLang } from '@/contexts/LangContext';
 import { Home, Search, PlusCircle, MessageSquare, User, Shield, Play, LogOut } from 'lucide-react';
 
 export default function DesktopNav() {
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
+  const { lang, setLang, T } = useLang();
 
   const items = [
-    { to: '/', icon: Home, label: 'Feed' },
-    { to: '/explore', icon: Search, label: 'Explore' },
-    { to: '/upload', icon: PlusCircle, label: 'Upload' },
-    { to: '/requests', icon: MessageSquare, label: 'Requests' },
-    { to: '/profile', icon: User, label: 'Profile' },
+    { to: '/', icon: Home, label: T.nav.feed },
+    { to: '/explore', icon: Search, label: T.nav.explore },
+    { to: '/upload', icon: PlusCircle, label: T.nav.upload },
+    { to: '/requests', icon: MessageSquare, label: T.nav.requests },
+    { to: '/profile', icon: User, label: T.nav.profile },
   ];
 
   return (
@@ -31,6 +33,7 @@ export default function DesktopNav() {
                 active ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
               }`}
               title={item.label}
+              data-testid={`nav-${item.to.replace('/', '') || 'feed'}`}
             >
               <item.icon className="w-5 h-5" />
             </NavLink>
@@ -43,17 +46,29 @@ export default function DesktopNav() {
             className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
               location.pathname === '/admin' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
             }`}
-            title="Admin"
+            title={T.nav.admin}
+            data-testid="nav-admin"
           >
             <Shield className="w-5 h-5" />
           </NavLink>
         )}
       </nav>
 
+      {/* Language toggle */}
+      <button
+        onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+        className="w-12 h-8 mb-3 rounded-lg flex items-center justify-center bg-secondary/60 hover:bg-secondary text-xs font-bold text-foreground transition-colors"
+        title={lang === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+        data-testid="button-lang-toggle"
+      >
+        {lang === 'en' ? 'ع' : 'EN'}
+      </button>
+
       <button
         onClick={logout}
         className="w-12 h-12 rounded-xl flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-        title="Logout"
+        title={T.nav.logout}
+        data-testid="button-logout"
       >
         <LogOut className="w-5 h-5" />
       </button>

@@ -7,7 +7,7 @@ import { seedIfEmpty } from './seed.js';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 
 // ── Categories ────────────────────────────────────────────────
 app.get('/api/categories', async (_req, res) => {
@@ -174,7 +174,15 @@ app.post('/api/profiles/upsert', async (req, res) => {
 
 app.patch('/api/profiles/:userId', async (req, res) => {
   try {
-    const [row] = await db.update(profiles).set(req.body).where(eq(profiles.user_id, req.params.userId)).returning();
+    const { name, department, bio, skills, years_experience, avatar } = req.body;
+    const updates: Record<string, unknown> = { updated_at: new Date() };
+    if (name !== undefined) updates.name = name;
+    if (department !== undefined) updates.department = department;
+    if (bio !== undefined) updates.bio = bio;
+    if (skills !== undefined) updates.skills = skills;
+    if (years_experience !== undefined) updates.years_experience = years_experience;
+    if (avatar !== undefined) updates.avatar = avatar;
+    const [row] = await db.update(profiles).set(updates).where(eq(profiles.user_id, req.params.userId)).returning();
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });

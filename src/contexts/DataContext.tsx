@@ -107,6 +107,7 @@ interface DataContextType {
   addCategory: (name: string, icon: string) => void;
   deleteCategory: (id: string) => void;
   incrementView: (videoId: string) => void;
+  updateProfile: (userId: string, updates: { name?: string; department?: string; bio?: string; skills?: string[]; years_experience?: number; avatar?: string }) => Promise<void>;
   refreshData: () => void;
 }
 
@@ -265,6 +266,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setVideos(prev => prev.map(v => v.id === videoId ? { ...v, views: v.views + 1 } : v));
   };
 
+  const updateProfile = async (userId: string, updates: { name?: string; department?: string; bio?: string; skills?: string[]; years_experience?: number; avatar?: string }) => {
+    const data = await apiFetch(`/api/profiles/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+    setProfiles(prev => prev.map(p => p.user_id === userId ? { ...p, ...data } : p));
+  };
+
   return (
     <DataContext.Provider value={{
       videos, requests, categories, profiles,
@@ -272,7 +281,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       toggleLike, toggleSave, toggleFollow,
       addComment, addRequest, updateRequestStatus, addRequestMessage, rateRequest,
       updateVideoStatus, deleteVideo, addVideo, addCategory, deleteCategory,
-      incrementView,
+      incrementView, updateProfile,
       refreshData: fetchData,
     }}>
       {children}
