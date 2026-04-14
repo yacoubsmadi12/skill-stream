@@ -1,6 +1,18 @@
 import { pgTable, uuid, text, integer, numeric, timestamp, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  user_id: text('user_id').notNull(),
+  actor_name: text('actor_name').notNull(),
+  actor_avatar: text('actor_avatar').notNull().default(''),
+  type: text('type').notNull(),
+  video_title: text('video_title').notNull().default(''),
+  video_id: text('video_id').notNull().default(''),
+  read: boolean('read').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const categories = pgTable('categories', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   name: text('name').notNull().unique(),

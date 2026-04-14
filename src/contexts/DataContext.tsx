@@ -94,6 +94,18 @@ export interface PointsHistoryEntry {
   created_at: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  actor_name: string;
+  actor_avatar: string;
+  type: string;
+  video_title: string;
+  video_id: string;
+  read: boolean;
+  created_at: string;
+}
+
 export interface AppSettings {
   approval_required: string;
 }
@@ -107,6 +119,7 @@ interface DataContextType {
   savedVideos: Set<string>;
   followedUsers: Set<string>;
   pointsHistory: PointsHistoryEntry[];
+  notifications: Notification[];
   settings: AppSettings;
   loading: boolean;
   toggleLike: (videoId: string) => void;
@@ -126,6 +139,9 @@ interface DataContextType {
   updateProfile: (userId: string, updates: { name?: string; department?: string; bio?: string; skills?: string[]; years_experience?: number; avatar?: string }) => Promise<void>;
   refreshData: () => void;
   loadPointsHistory: (userId: string) => Promise<void>;
+  loadNotifications: (userId: string) => Promise<void>;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: (userId: string) => void;
   updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
 }
 
@@ -149,17 +165,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [savedVideos, setSavedVideos] = useState<Set<string>>(new Set());
   const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
   const [pointsHistory, setPointsHistory] = useState<PointsHistoryEntry[]>([]);
+  const [notificationsList, setNotificationsList] = useState<Notification[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ approval_required: 'true' });
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; avatar: string } | null>(null);
 
-  // Load current user from localStorage
   useEffect(() => {
     const raw = localStorage.getItem('ztube_user');
     if (raw) {
       try {
         const u = JSON.parse(raw);
-        setCurrentUserId(u.id);
+        setCurrentUser({ id: u.id, name: u.name || '', avatar: u.avatar || '' });
       } catch { /* ignore */ }
     }
   }, []);
@@ -191,13 +207,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setSettings(updated);
   };
 
-  // Load persisted follows when we know the user
   useEffect(() => {
-    if (!currentUserId) return;
-    apiFetch(`/api/follows?userId=${currentUserId}`)
+    if (!currentUser?.id) return;
+    apiFetch(`/api/follows?userId=${currentUser.id}`)
       .then((ids: string[]) => setFollowedUsers(new Set(ids)))
       .catch(() => {});
-  }, [currentUserId]);
+  }, [currentUser?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -208,10 +223,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (wasLiked) next.delete(videoId); else next.add(videoId);
       const video = videos.find(v => v.id === videoId);
       if (video) {
-        // Use the dedicated like endpoint so points are awarded
         apiFetch(`/api/videos/${videoId}/like`, {
           method: 'POST',
-          body: JSON.stringify({ userId: currentUserId, liked: !wasLiked }),
+          body: JSON.stringify({
+            userId: currentUser?.id,
+            liked: !wasLiked,
+            actorName: currentUser?.name,
+            actorAvatar: currentUser?.avatar,
+          }),
         }).catch(console.error);
         setVideos(vs => vs.map(v => v.id === videoId ? { ...v, likes: v.likes + (wasLiked ? -1 : 1) } : v));
       }
@@ -222,7 +241,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const toggleSave = (videoId: string) => {
     setSavedVideos(prev => {
       const next = new Set(prev);
-      if (next.has(videoId)) next.delete(videoId); else next.add(videoId);
+      const wasSaved = next.has(videoId);
+      if (wasSaved) next.delete(videoId); else next.add(videoId);
+      apiFetch(`/api/videos/${videoId}/save`, {
+        method: 'POST',
+        body: JSON.stringify({
+          actorId: currentUser?.id,
+          actorName: currentUser?.name,
+          actorAvatar: currentUser?.avatar,
+          saved: !wasSaved,
+        }),
+      }).then(updated => {
+        setVideos(vs => vs.map(v => v.id === videoId ? { ...v, saves: updated.saves } : v));
+      }).catch(console.error);
       return next;
     });
   };
@@ -235,7 +266,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         next.delete(userId);
         apiFetch('/api/follows', {
           method: 'DELETE',
-          body: JSON.stringify({ followerId: currentUserId, followingId: userId }),
+          body: JSON.stringify({ followerId: currentUser?.id, followingId: userId }),
         }).catch(console.error);
         setProfiles(ps => ps.map(p =>
           p.user_id === userId ? { ...p, followers: Math.max(0, p.followers - 1) } : p
@@ -244,7 +275,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         next.add(userId);
         apiFetch('/api/follows', {
           method: 'POST',
-          body: JSON.stringify({ followerId: currentUserId, followingId: userId }),
+          body: JSON.stringify({
+            followerId: currentUser?.id,
+            followingId: userId,
+            actorName: currentUser?.name,
+            actorAvatar: currentUser?.avatar,
+          }),
         }).catch(console.error);
         setProfiles(ps => ps.map(p =>
           p.user_id === userId ? { ...p, followers: p.followers + 1 } : p
@@ -257,7 +293,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const addComment = async (videoId: string, userName: string, text: string, userId?: string) => {
     const data = await apiFetch('/api/comments', {
       method: 'POST',
-      body: JSON.stringify({ videoId, userName, text, userId: userId || currentUserId }),
+      body: JSON.stringify({
+        videoId,
+        userName,
+        text,
+        userId: userId || currentUser?.id,
+        userAvatar: currentUser?.avatar,
+      }),
     });
     setVideos(vs => vs.map(v => v.id === videoId ? { ...v, comments: [...v.comments, data] } : v));
   };
@@ -292,7 +334,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ rating, feedback, status: 'completed' }),
     });
     setRequests(prev => prev.map(r => r.id === reqId ? { ...r, rating, feedback, status: 'completed' } : r));
-    // Refresh profiles so points update is reflected
     apiFetch('/api/profiles').then(setProfiles).catch(() => {});
   };
 
@@ -302,7 +343,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ status }),
     });
     setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status } : v));
-    // Refresh profiles to pick up points awarded on approval
     apiFetch('/api/profiles').then(setProfiles).catch(() => {});
   };
 
@@ -350,16 +390,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setPointsHistory(data);
   };
 
+  const loadNotifications = async (userId: string) => {
+    const data = await apiFetch(`/api/notifications/${userId}`);
+    setNotificationsList(data);
+  };
+
+  const markNotificationRead = (id: string) => {
+    apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' }).catch(console.error);
+    setNotificationsList(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const markAllNotificationsRead = (userId: string) => {
+    apiFetch(`/api/notifications/read-all/${userId}`, { method: 'PATCH' }).catch(console.error);
+    setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   return (
     <DataContext.Provider value={{
       videos, requests, categories, profiles,
-      likedVideos, savedVideos, followedUsers, pointsHistory, settings, loading,
+      likedVideos, savedVideos, followedUsers, pointsHistory, notifications: notificationsList, settings, loading,
       toggleLike, toggleSave, toggleFollow,
       addComment, addRequest, updateRequestStatus, addRequestMessage, rateRequest,
       updateVideoStatus, deleteVideo, addVideo, addCategory, deleteCategory,
       incrementView, updateProfile,
       refreshData: fetchData,
       loadPointsHistory,
+      loadNotifications,
+      markNotificationRead,
+      markAllNotificationsRead,
       updateSettings,
     }}>
       {children}

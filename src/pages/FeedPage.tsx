@@ -5,7 +5,6 @@ import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLang } from '@/contexts/LangContext';
 import { Button } from '@/components/ui/button';
-
 import { Input } from '@/components/ui/input';
 import RequestDialog from '@/components/RequestDialog';
 
@@ -20,10 +19,9 @@ function shareVideoOnLinkedIn(video: { title: string; description: string; categ
   window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
 }
 
-// ── Video URL helpers ──────────────────────────────────────────
+// ── Video URL + thumbnail helpers ─────────────────────────────
 function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' | 'none' {
   if (!url) return 'none';
-  // Match ANY youtube.com or youtu.be URL
   if (url.match(/(?:youtube\.com|youtu\.be)/)) return 'youtube';
   if (url.match(/(?:vimeo\.com|player\.vimeo\.com)/)) return 'vimeo';
   if (url.startsWith('data:video/') || url.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i)) return 'video';
@@ -31,18 +29,17 @@ function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' |
   return 'none';
 }
 
-function getYouTubeEmbedUrl(url: string): string {
-  // watch?v=
+function getYouTubeId(url: string): string | null {
   const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-  // youtu.be/ID
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-  // /embed/ID
   const embedMatch = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
-  // /shorts/ID
   const shortsMatch = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
-  // /live/ID
   const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]+)/);
-  const id = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || shortsMatch?.[1] || liveMatch?.[1] || '';
+  return watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || shortsMatch?.[1] || liveMatch?.[1] || null;
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  const id = getYouTubeId(url) || '';
   return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
 }
 
@@ -64,19 +61,23 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const type = getVideoType(url);
+  const ytId = type === 'youtube' ? getYouTubeId(url) : null;
+  const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
 
-  const Bg = (
+  const Bg = thumbnailUrl ? (
+    <div className="absolute inset-0">
+      <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
+      <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-20`} />
+    </div>
+  ) : (
     <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
   );
 
-  // When iframe loads, check if it has real content (cross-origin: can't read doc, so
-  // we optimistically trust load = success, but cancel the "blocked" timer)
   const handleIframeLoad = () => {
     if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
     setIframeLoaded(true);
   };
 
-  // Start a short timer when playing begins; if iframe hasn't loaded by then, flag it blocked
   useEffect(() => {
     if (playing && type === 'external') {
       blockTimerRef.current = setTimeout(() => {
@@ -91,7 +92,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
       <div className="absolute inset-0" onClick={onDoubleTap}>
         {Bg}
         <div className="absolute inset-0 flex items-center justify-center">
-          <Play className="w-16 h-16 text-white/20" />
+          <Play className="w-16 h-16 text-white/30" />
         </div>
       </div>
     );
@@ -101,10 +102,10 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     return (
       <div className="absolute inset-0" onClick={onDoubleTap}>
         {Bg}
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
           <button
             onClick={e => { e.stopPropagation(); setPlaying(true); }}
-            className="w-20 h-20 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center hover:scale-110 transition-transform"
+            className="w-20 h-20 rounded-full bg-black/50 backdrop-blur-sm border-2 border-white/70 flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
           >
             <Play className="w-9 h-9 text-white fill-white ml-1" />
           </button>
@@ -116,7 +117,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   if (type === 'youtube') {
     return (
       <div className="absolute inset-0 bg-black">
-        {Bg}
         <iframe
           src={getYouTubeEmbedUrl(url)}
           className="absolute inset-0 w-full h-full"
@@ -130,7 +130,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   if (type === 'vimeo') {
     return (
       <div className="absolute inset-0 bg-black">
-        {Bg}
         <iframe
           src={getVimeoEmbedUrl(url)}
           className="absolute inset-0 w-full h-full"
@@ -155,23 +154,21 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     );
   }
 
-  // External link — try to embed, with graceful fallback if blocked
   if (iframeBlocked) {
     return (
       <div className="absolute inset-0" onClick={onDoubleTap}>
         {Bg}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
-          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-1">
+        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-4 px-6">
+          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
             <ExternalLink className="w-7 h-7 text-white/80" />
           </div>
           <p className="text-white font-semibold text-base text-center">This video cannot be embedded</p>
-          <p className="text-white/50 text-xs text-center max-w-[220px]">The site blocks embedding. Watch the video directly:</p>
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
+            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105"
           >
             <Play className="w-4 h-4 fill-white" />
             Open Video
@@ -184,7 +181,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   return (
     <div className="absolute inset-0 bg-black">
       {Bg}
-      {/* Loading shimmer shown while iframe loads */}
       {!iframeLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
           <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -199,7 +195,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
         allow="autoplay; fullscreen; encrypted-media"
         onLoad={handleIframeLoad}
       />
-      {/* Subtle open-in-new-tab button always available */}
       <a
         href={url}
         target="_blank"
@@ -216,14 +211,25 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
 
 // ── Feed page ──────────────────────────────────────────────────
 export default function FeedPage() {
-  const { videos, likedVideos, savedVideos, followedUsers, toggleLike, toggleSave, toggleFollow, addComment, incrementView } = useData();
+  const { videos, categories, likedVideos, savedVideos, followedUsers, toggleLike, toggleSave, toggleFollow, addComment, incrementView } = useData();
   const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewedRef = useRef<Set<string>>(new Set());
-  const approvedVideos = videos.filter(v => v.status === 'approved');
 
-  const firstVideoId = approvedVideos[0]?.id;
+  const approvedVideos = videos.filter(v => v.status === 'approved');
+  const filteredVideos = selectedCategory
+    ? approvedVideos.filter(v => v.category === selectedCategory)
+    : approvedVideos;
+
+  const firstVideoId = filteredVideos[0]?.id;
+  useEffect(() => {
+    setCurrentIndex(0);
+    viewedRef.current = new Set();
+    if (containerRef.current) containerRef.current.scrollTop = 0;
+  }, [selectedCategory]);
+
   useEffect(() => {
     if (firstVideoId && !viewedRef.current.has(firstVideoId)) {
       viewedRef.current.add(firstVideoId);
@@ -239,7 +245,7 @@ export default function FeedPage() {
     const idx = Math.round(scrollTop / height);
     setCurrentIndex(prev => {
       if (idx !== prev) {
-        const vid = approvedVideos[idx];
+        const vid = filteredVideos[idx];
         if (vid && !viewedRef.current.has(vid.id)) {
           viewedRef.current.add(vid.id);
           incrementView(vid.id);
@@ -247,29 +253,70 @@ export default function FeedPage() {
       }
       return idx;
     });
-  }, [approvedVideos, incrementView]);
+  }, [filteredVideos, incrementView]);
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="h-screen overflow-y-scroll snap-y-mandatory scrollbar-hide"
-    >
-      {approvedVideos.map((video, idx) => (
-        <VideoCard
-          key={video.id}
-          video={video}
-          isActive={idx === currentIndex}
-          isLiked={likedVideos.has(video.id)}
-          isSaved={savedVideos.has(video.id)}
-          isFollowing={followedUsers.has(video.user_id)}
-          onLike={() => toggleLike(video.id)}
-          onSave={() => toggleSave(video.id)}
-          onFollow={() => toggleFollow(video.user_id)}
-          onComment={(text) => addComment(video.id, user?.name || 'Anonymous', text)}
-          currentUserId={user?.id || ''}
-        />
-      ))}
+    <div className="h-screen relative overflow-hidden">
+      {/* Categories bar — fixed overlay */}
+      <div className="absolute top-0 inset-x-0 z-40 pt-3 pb-2 px-3 bg-gradient-to-b from-background/90 to-transparent pointer-events-none">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pointer-events-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              selectedCategory === null
+                ? 'gradient-primary text-primary-foreground shadow-md'
+                : 'bg-background/80 backdrop-blur-sm text-foreground border border-border/60 hover:border-primary/40'
+            }`}
+          >
+            All
+          </button>
+          {categories.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCategory(prev => prev === c.name ? null : c.name)}
+              className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                selectedCategory === c.name
+                  ? 'gradient-primary text-primary-foreground shadow-md'
+                  : 'bg-background/80 backdrop-blur-sm text-foreground border border-border/60 hover:border-primary/40'
+              }`}
+            >
+              <span>{c.icon}</span>
+              <span className="max-w-[80px] truncate">{c.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Video feed */}
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
+        style={{ scrollSnapType: 'y mandatory' }}
+      >
+        {filteredVideos.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+            <span className="text-4xl">{categories.find(c => c.name === selectedCategory)?.icon || '🎬'}</span>
+            <p className="font-semibold">No videos in this category yet</p>
+          </div>
+        ) : (
+          filteredVideos.map((video, idx) => (
+            <VideoCard
+              key={video.id}
+              video={video}
+              isActive={idx === currentIndex}
+              isLiked={likedVideos.has(video.id)}
+              isSaved={savedVideos.has(video.id)}
+              isFollowing={followedUsers.has(video.user_id)}
+              onLike={() => toggleLike(video.id)}
+              onSave={() => toggleSave(video.id)}
+              onFollow={() => toggleFollow(video.user_id)}
+              onComment={(text) => addComment(video.id, user?.name || 'Anonymous', text)}
+              currentUserId={user?.id || ''}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
@@ -322,7 +369,7 @@ function VideoCard({
   };
 
   return (
-    <div className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden">
+    <div className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden" style={{ scrollSnapAlign: 'start' }}>
       {/* Smart video player */}
       <VideoPlayer
         url={video.video_url}
@@ -339,21 +386,23 @@ function VideoCard({
             exit={{ scale: 2, opacity: 0 }}
             className="absolute z-30 pointer-events-none"
           >
-            <Heart className="w-24 h-24 text-primary fill-primary" />
+            <Heart className="w-24 h-24 text-primary fill-primary drop-shadow-2xl" />
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Bottom gradient overlay */}
-      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background/95 via-background/50 to-transparent pointer-events-none z-10" />
+      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background/95 via-background/40 to-transparent pointer-events-none z-10" />
 
       {/* Video info */}
       <div className="absolute bottom-0 inset-x-0 p-5 pb-24 md:pb-8 z-20">
         <div className="flex items-end gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0">
-                {video.user_name.charAt(0)}
+              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 overflow-hidden">
+                {video.user_avatar
+                  ? <img src={video.user_avatar} alt={video.user_name} className="w-full h-full object-cover" />
+                  : video.user_name.charAt(0)}
               </div>
               <div>
                 <p className="text-foreground font-semibold text-sm">{video.user_name}</p>
@@ -460,10 +509,10 @@ function ActionButton({ icon: Icon, count, active, onClick, activeClass }: {
 }) {
   return (
     <button onClick={onClick} className="flex flex-col items-center gap-1">
-      <div className={`w-10 h-10 rounded-full bg-secondary/60 backdrop-blur-sm flex items-center justify-center transition-colors ${active ? activeClass : 'text-foreground'}`}>
+      <div className={`w-12 h-12 rounded-full bg-secondary/70 backdrop-blur-sm flex items-center justify-center transition-all ${active ? activeClass : 'text-foreground'} ${active ? 'scale-110' : ''}`}>
         <Icon className="w-5 h-5" />
       </div>
-      {count > 0 && <span className="text-xs text-foreground/70">{count}</span>}
+      {count > 0 && <span className="text-xs text-foreground/80 font-medium">{count}</span>}
     </button>
   );
 }

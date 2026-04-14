@@ -33,6 +33,17 @@ Uses a mock LDAP system (no real auth server). Demo credentials:
 - `comments` — Comments on videos
 - `service_requests` — Peer service/help requests
 - `request_messages` — Chat messages within a service request
+- `user_follows` — Follow relationships between users
+- `points_history` — Gamification points log per user
+- `notifications` — In-app notifications (like, save, comment, follow events)
+
+## Key Features
+- **Categories bar**: Horizontal filter strip at top of Feed for quick category filtering
+- **TikTok-style feed**: Snap-scroll video feed with YouTube thumbnail extraction and real video embedding
+- **Follow from Explore**: Follow/unfollow button on both user profiles and video modals in Explore
+- **Video interactions in Explore**: Like, save, and comment on videos directly from the Explore modal
+- **Push Notifications**: Per-user notification panel in Profile (bell icon) showing likes, saves, comments, follows — with unread badge and mark-read support
+- **Gamification**: Points system with badges, awarded for video approvals, likes, views, comments, follows, requests
 
 ## Running
 ```bash

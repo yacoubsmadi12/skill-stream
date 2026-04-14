@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { useLang } from '@/contexts/LangContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, ChevronRight } from 'lucide-react';
+import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -21,9 +21,25 @@ function Avatar({ avatar, name, size = 'md' }: { avatar?: string; name?: string;
   );
 }
 
+function notifIcon(type: string) {
+  if (type === 'like') return <Heart className="w-4 h-4 text-primary fill-primary" />;
+  if (type === 'save') return <Bookmark className="w-4 h-4 text-warning fill-warning" />;
+  if (type === 'comment') return <MessageCircle className="w-4 h-4 text-blue-400" />;
+  if (type === 'follow') return <UserPlus className="w-4 h-4 text-success" />;
+  return <Bell className="w-4 h-4 text-muted-foreground" />;
+}
+
+function notifText(type: string, actorName: string, videoTitle: string) {
+  if (type === 'like') return `${actorName} liked your video "${videoTitle}"`;
+  if (type === 'save') return `${actorName} saved your video "${videoTitle}"`;
+  if (type === 'comment') return `${actorName} commented on "${videoTitle}"`;
+  if (type === 'follow') return `${actorName} started following you`;
+  return `${actorName} interacted with your content`;
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { profiles, videos, updateProfile, deleteVideo, pointsHistory, loadPointsHistory } = useData();
+  const { profiles, videos, updateProfile, deleteVideo, pointsHistory, loadPointsHistory, notifications, loadNotifications, markNotificationRead, markAllNotificationsRead } = useData();
   const { T } = useLang();
   const { toast } = useToast();
 
@@ -40,6 +56,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [showPoints, setShowPoints] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   const [editName, setEditName] = useState('');
   const [editDept, setEditDept] = useState('');
@@ -52,7 +71,10 @@ export default function ProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user?.id) loadPointsHistory(user.id);
+    if (user?.id) {
+      loadPointsHistory(user.id);
+      loadNotifications(user.id);
+    }
   }, [user?.id]);
 
   const openEdit = () => {
@@ -117,13 +139,27 @@ export default function ProfilePage() {
         <div className="gradient-primary p-8 pb-20 relative">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-display font-bold text-primary-foreground">{T.profile.title}</h1>
-            <button
-              onClick={openEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              {T.profile.editProfile}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Notifications bell */}
+              <button
+                onClick={() => { setShowNotifications(true); }}
+                className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={openEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                {T.profile.editProfile}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -431,6 +467,86 @@ export default function ProfilePage() {
                     </div>
                   );
                 })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Notifications Modal */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center"
+            onClick={e => { if (e.target === e.currentTarget) setShowNotifications(false); }}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-card w-full md:max-w-md rounded-t-3xl md:rounded-2xl border border-border/50 shadow-2xl max-h-[80vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-border/30 shrink-0">
+                <div>
+                  <h2 className="text-lg font-display font-bold text-foreground flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-primary" />
+                    Notifications
+                  </h2>
+                  {unreadCount > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{unreadCount} unread</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => user?.id && markAllNotificationsRead(user.id)}
+                      className="text-xs text-primary hover:underline font-medium"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  <button onClick={() => setShowNotifications(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-y-auto flex-1 p-3 space-y-2">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Bell className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">No notifications yet</p>
+                    <p className="text-muted-foreground/60 text-xs mt-1">When someone likes, saves, comments, or follows you — it'll appear here</p>
+                  </div>
+                ) : (
+                  notifications.map(n => (
+                    <button
+                      key={n.id}
+                      onClick={() => !n.read && markNotificationRead(n.id)}
+                      className={`w-full flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors ${n.read ? 'bg-secondary/20' : 'bg-primary/5 border border-primary/10'}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                        {n.actor_avatar
+                          ? <img src={n.actor_avatar} alt={n.actor_name} className="w-full h-full object-cover" />
+                          : <span className="text-sm font-bold text-secondary-foreground">{n.actor_name.charAt(0)}</span>
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          {notifIcon(n.type)}
+                          <p className="text-sm text-foreground line-clamp-2">{notifText(n.type, n.actor_name, n.video_title)}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      {!n.read && (
+                        <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                      )}
+                    </button>
+                  ))
+                )}
               </div>
             </motion.div>
           </motion.div>

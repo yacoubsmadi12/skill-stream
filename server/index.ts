@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { db } from './db.js';
-import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history } from './schema.js';
+import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications } from './schema.js';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
 import { seedIfEmpty } from './seed.js';
 
@@ -24,6 +24,12 @@ app.patch('/api/settings', (req, res) => {
 async function awardPoints(userId: string, action: string, points: number, description: string) {
   await db.insert(points_history).values({ user_id: userId, action, points, description });
   await db.update(profiles).set({ points: sql`points + ${points}` }).where(eq(profiles.user_id, userId));
+}
+
+// ── Notification helper ────────────────────────────────────────
+async function createNotification(userId: string, actorName: string, actorAvatar: string, type: string, videoTitle = '', videoId = '') {
+  if (!userId || !actorName) return;
+  await db.insert(notifications).values({ user_id: userId, actor_name: actorName, actor_avatar: actorAvatar, type, video_title: videoTitle, video_id: videoId });
 }
 
 // ── Categories ────────────────────────────────────────────────
@@ -129,15 +135,15 @@ app.post('/api/videos/:id/view', async (req, res) => {
 
 app.post('/api/videos/:id/like', async (req, res) => {
   try {
-    const { userId, liked } = req.body;
+    const { userId, liked, actorName, actorAvatar } = req.body;
     const delta = liked ? 1 : -1;
     const [row] = await db.update(videos)
       .set({ likes: sql`likes + ${delta}` })
       .where(eq(videos.id, req.params.id))
       .returning();
-    // Award points to video owner on new like
-    if (liked) {
+    if (liked && row.user_id !== userId) {
       await awardPoints(row.user_id, 'video_liked', 5, `Someone liked your video: ${row.title}`);
+      await createNotification(row.user_id, actorName || 'Someone', actorAvatar || '', 'like', row.title, row.id);
     }
     res.json(row);
   } catch (e) {
@@ -163,17 +169,17 @@ app.delete('/api/videos/:id', async (req, res) => {
 // ── Comments ──────────────────────────────────────────────────
 app.post('/api/comments', async (req, res) => {
   try {
-    const { videoId, userName, text, userId } = req.body;
+    const { videoId, userName, text, userId, userAvatar } = req.body;
     const [row] = await db.insert(comments).values({
       video_id: videoId,
       user_id: userId || '',
       user_name: userName,
       text,
     }).returning();
-    // Award points to video owner for receiving a comment
     const [vid] = await db.select().from(videos).where(eq(videos.id, videoId));
     if (vid && vid.user_id !== userId) {
       await awardPoints(vid.user_id, 'comment_received', 3, `New comment on your video: ${vid.title}`);
+      await createNotification(vid.user_id, userName || 'Someone', userAvatar || '', 'comment', vid.title, vid.id);
     }
     res.json(row);
   } catch (e) {
@@ -243,15 +249,15 @@ app.get('/api/follows', async (req, res) => {
 
 app.post('/api/follows', async (req, res) => {
   try {
-    const { followerId, followingId } = req.body;
+    const { followerId, followingId, actorName, actorAvatar } = req.body;
     const existing = await db.select().from(user_follows)
       .where(and(eq(user_follows.follower_id, followerId), eq(user_follows.following_id, followingId)));
     if (existing.length > 0) return res.json({ ok: true });
     await db.insert(user_follows).values({ follower_id: followerId, following_id: followingId });
     await db.update(profiles).set({ followers: sql`followers + 1` }).where(eq(profiles.user_id, followingId));
     await db.update(profiles).set({ following: sql`following + 1` }).where(eq(profiles.user_id, followerId));
-    // Award points to the person being followed
     await awardPoints(followingId, 'new_follower', 10, 'You have a new follower');
+    await createNotification(followingId, actorName || 'Someone', actorAvatar || '', 'follow');
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
@@ -349,6 +355,56 @@ app.post('/api/requests/:id/messages', async (req, res) => {
       text,
     }).returning();
     res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// ── Video Save ────────────────────────────────────────────────
+app.post('/api/videos/:id/save', async (req, res) => {
+  try {
+    const { actorName, actorAvatar, saved } = req.body;
+    const [vid] = await db.select().from(videos).where(eq(videos.id, req.params.id));
+    if (vid && saved && vid.user_id !== req.body.actorId) {
+      await createNotification(vid.user_id, actorName, actorAvatar || '', 'save', vid.title, vid.id);
+    }
+    const delta = saved ? 1 : -1;
+    const [row] = await db.update(videos)
+      .set({ saves: sql`GREATEST(saves + ${delta}, 0)` })
+      .where(eq(videos.id, req.params.id))
+      .returning();
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// ── Notifications ──────────────────────────────────────────────
+app.get('/api/notifications/:userId', async (req, res) => {
+  try {
+    const rows = await db.select().from(notifications)
+      .where(eq(notifications.user_id, req.params.userId))
+      .orderBy(desc(notifications.created_at))
+      .limit(50);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.patch('/api/notifications/:id/read', async (req, res) => {
+  try {
+    await db.update(notifications).set({ read: true }).where(eq(notifications.id, req.params.id));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.patch('/api/notifications/read-all/:userId', async (req, res) => {
+  try {
+    await db.update(notifications).set({ read: true }).where(eq(notifications.user_id, req.params.userId));
+    res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
