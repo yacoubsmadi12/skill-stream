@@ -271,12 +271,24 @@ export default function AdminPage() {
                     {/* Thumbnail — clickable for preview */}
                     <button
                       onClick={() => setPreviewVideo(v)}
-                      className="relative w-16 h-16 rounded-lg shrink-0 group overflow-hidden"
+                      className="relative w-20 h-14 rounded-lg shrink-0 group overflow-hidden"
                       title="Preview video"
                     >
-                      <div className={`w-full h-full bg-gradient-to-br ${v.thumbnail_color}`} />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Eye className="w-5 h-5 text-white" />
+                      {(() => {
+                        const ytMatch = v.video_url?.match(/(?:v=|youtu\.be\/|\/embed\/|\/shorts\/|\/live\/)([a-zA-Z0-9_-]{11})/);
+                        const ytId = ytMatch?.[1];
+                        return ytId ? (
+                          <img
+                            src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+                            alt={v.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${v.thumbnail_color}`} />
+                        );
+                      })()}
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                        <Play className="w-5 h-5 text-white fill-white" />
                       </div>
                     </button>
 
@@ -499,7 +511,7 @@ export default function AdminPage() {
               </div>
 
               {/* Video player */}
-              <div className="aspect-video bg-black">
+              <div className="relative aspect-video bg-black">
                 <VideoPlayer videoUrl={previewVideo.video_url} thumbnailColor={previewVideo.thumbnail_color} />
               </div>
 
