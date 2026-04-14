@@ -60,12 +60,22 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [ytBlocked, setYtBlocked] = useState(false);
+  const [thumbQuality, setThumbQuality] = useState<'maxresdefault' | 'hqdefault' | 'mqdefault' | 'failed'>('maxresdefault');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ytActuallyPlayingRef = useRef(false);
   const type = getVideoType(url);
   const ytId = type === 'youtube' ? getYouTubeId(url) : null;
-  const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+  const thumbSrc = ytId && thumbQuality !== 'failed'
+    ? `https://img.youtube.com/vi/${ytId}/${thumbQuality}.jpg`
+    : null;
+
+  const handleThumbError = () => {
+    setThumbQuality(prev =>
+      prev === 'maxresdefault' ? 'hqdefault' :
+      prev === 'hqdefault' ? 'mqdefault' : 'failed'
+    );
+  };
 
   // Reset state when url changes
   useEffect(() => {
@@ -74,13 +84,19 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     setIframeLoaded(false);
     setVideoError(false);
     setYtBlocked(false);
+    setThumbQuality('maxresdefault');
     ytActuallyPlayingRef.current = false;
   }, [url]);
 
-  const Bg = thumbnailUrl ? (
+  const Bg = thumbSrc ? (
     <div className="absolute inset-0">
-      <img src={thumbnailUrl} alt="" className="w-full h-full object-cover" />
-      <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-20`} />
+      <img
+        src={thumbSrc}
+        alt=""
+        className="w-full h-full object-cover"
+        onError={handleThumbError}
+      />
+      <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-10`} />
     </div>
   ) : (
     <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />

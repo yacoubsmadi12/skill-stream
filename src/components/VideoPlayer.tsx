@@ -10,13 +10,17 @@ function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' |
   return 'none';
 }
 
-function getYouTubeEmbedUrl(url: string): string {
+function getYouTubeId(url: string): string | null {
   const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
   const embedMatch = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
   const shortsMatch = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
   const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]+)/);
-  const id = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || shortsMatch?.[1] || liveMatch?.[1] || '';
+  return watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || shortsMatch?.[1] || liveMatch?.[1] || null;
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  const id = getYouTubeId(url) || '';
   return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1`;
 }
 
@@ -38,10 +42,22 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [ytBlocked, setYtBlocked] = useState(false);
+  const [thumbQuality, setThumbQuality] = useState<'maxresdefault' | 'hqdefault' | 'mqdefault' | 'failed'>('maxresdefault');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ytActuallyPlayingRef = useRef(false);
   const type = getVideoType(url);
+  const ytId = type === 'youtube' ? getYouTubeId(url) : null;
+  const thumbSrc = ytId && thumbQuality !== 'failed'
+    ? `https://img.youtube.com/vi/${ytId}/${thumbQuality}.jpg`
+    : null;
+
+  const handleThumbError = () => {
+    setThumbQuality(prev =>
+      prev === 'maxresdefault' ? 'hqdefault' :
+      prev === 'hqdefault' ? 'mqdefault' : 'failed'
+    );
+  };
 
   // Reset state when url changes
   useEffect(() => {
@@ -50,10 +66,23 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
     setIframeLoaded(false);
     setVideoError(false);
     setYtBlocked(false);
+    setThumbQuality('maxresdefault');
     ytActuallyPlayingRef.current = false;
   }, [url]);
 
-  const Bg = <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />;
+  const Bg = thumbSrc ? (
+    <div className="absolute inset-0">
+      <img
+        src={thumbSrc}
+        alt=""
+        className="w-full h-full object-cover"
+        onError={handleThumbError}
+      />
+      <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-10`} />
+    </div>
+  ) : (
+    <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
+  );
 
   const handleIframeLoad = () => {
     if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
