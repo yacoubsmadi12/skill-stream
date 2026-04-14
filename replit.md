@@ -58,3 +58,5 @@ Migrated from Lovable/Supabase to Replit:
 - Removed `@supabase/supabase-js` and `lovable-tagger` dependencies
 - CSS `@import` moved before Tailwind directives to fix build warning
 - Vite configured for Replit (`host: 0.0.0.0`, `allowedHosts: true`, port 5000)
+- Supabase config/migrations folder removed; schema managed via Drizzle (`npm run db:push`)
+- Database seeded automatically on first startup via `server/seed.ts`
