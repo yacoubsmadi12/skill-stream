@@ -39,7 +39,7 @@ function notifText(type: string, actorName: string, videoTitle: string) {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { profiles, videos, updateProfile, deleteVideo, pointsHistory, loadPointsHistory, notifications, loadNotifications, markNotificationRead, markAllNotificationsRead } = useData();
+  const { profiles, videos, updateProfile, deleteVideo, pointsHistory, loadPointsHistory, notifications, loadNotifications, markNotificationRead, markAllNotificationsRead, followersList, loadFollowers } = useData();
   const { T } = useLang();
   const { toast } = useToast();
 

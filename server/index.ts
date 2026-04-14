@@ -247,6 +247,20 @@ app.get('/api/follows', async (req, res) => {
   }
 });
 
+app.get('/api/followers/:userId', async (req, res) => {
+  try {
+    const rows = await db.select().from(user_follows).where(eq(user_follows.following_id, req.params.userId));
+    const followerIds = rows.map(r => r.follower_id);
+    if (followerIds.length === 0) return res.json([]);
+    const followerProfiles = await db.select().from(profiles).where(
+      sql`${profiles.user_id} = ANY(${followerIds})`
+    );
+    return res.json(followerProfiles);
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
 app.post('/api/follows', async (req, res) => {
   try {
     const { followerId, followingId, actorName, actorAvatar } = req.body;

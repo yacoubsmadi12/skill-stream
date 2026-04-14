@@ -143,6 +143,8 @@ interface DataContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (userId: string) => void;
   updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
+  followersList: UserProfile[];
+  loadFollowers: (userId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -166,6 +168,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [followedUsers, setFollowedUsers] = useState<Set<string>>(new Set());
   const [pointsHistory, setPointsHistory] = useState<PointsHistoryEntry[]>([]);
   const [notificationsList, setNotificationsList] = useState<Notification[]>([]);
+  const [followersList, setFollowersList] = useState<UserProfile[]>([]);
   const [settings, setSettings] = useState<AppSettings>({ approval_required: 'true' });
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; avatar: string } | null>(null);
@@ -405,6 +408,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const loadFollowers = async (userId: string) => {
+    const data = await apiFetch(`/api/followers/${userId}`);
+    setFollowersList(data);
+  };
+
   return (
     <DataContext.Provider value={{
       videos, requests, categories, profiles,
@@ -419,6 +427,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       markNotificationRead,
       markAllNotificationsRead,
       updateSettings,
+      followersList,
+      loadFollowers,
     }}>
       {children}
     </DataContext.Provider>
