@@ -5,7 +5,7 @@ import { useLang } from '@/contexts/LangContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { Upload, X, Video, Tag, CheckCircle, Play } from 'lucide-react';
+import { Upload, X, Video, Tag, CheckCircle, Play, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const COLORS = [
@@ -21,7 +21,7 @@ const COLORS = [
 
 export default function UploadPage() {
   const { user } = useAuth();
-  const { addVideo, categories, settings } = useData();
+  const { addVideo, addCategory, categories, settings } = useData();
   const { T } = useLang();
   const navigate = useNavigate();
 
@@ -33,6 +33,7 @@ export default function UploadPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
@@ -85,9 +86,22 @@ export default function UploadPage() {
       setError('الفيديو لا يزال يُعالج، انتظر لحظة وحاول مجدداً.');
       return;
     }
+    if (category === 'other' && !customCategory.trim()) {
+      setError('يرجى إدخال اسم التصنيف الجديد.');
+      return;
+    }
     setUploading(true);
     setError('');
     try {
+      let finalCategory = category || 'Uncategorized';
+      if (category === 'other' && customCategory.trim()) {
+        const trimmed = customCategory.trim();
+        const exists = categories.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
+        if (!exists) {
+          await addCategory(trimmed, '📁');
+        }
+        finalCategory = trimmed;
+      }
       await addVideo({
         userId: user.id,
         userName: user.name,
@@ -96,7 +110,7 @@ export default function UploadPage() {
         title: title.trim(),
         description: description.trim(),
         tags,
-        category: category || 'Uncategorized',
+        category: finalCategory,
         videoUrl: fileDataUrl,
         thumbnailColor: selectedColor,
         status: settings.approval_required === 'true' ? 'pending' : 'approved',
@@ -198,7 +212,7 @@ export default function UploadPage() {
             <label className="text-sm text-muted-foreground mb-2 block">{T.upload.category}</label>
             <select
               value={category}
-              onChange={e => setCategory(e.target.value)}
+              onChange={e => { setCategory(e.target.value); setCustomCategory(''); }}
               className="w-full bg-secondary/50 border border-border/50 rounded-lg p-3 text-foreground text-sm h-12"
               data-testid="select-category"
             >
@@ -206,7 +220,24 @@ export default function UploadPage() {
               {categories.map(c => (
                 <option key={c.id} value={c.name}>{c.icon} {c.name}</option>
               ))}
+              <option value="other">➕ أخرى (تصنيف جديد)</option>
             </select>
+            {category === 'other' && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 flex gap-2 items-center"
+              >
+                <Plus className="w-4 h-4 text-primary shrink-0" />
+                <Input
+                  value={customCategory}
+                  onChange={e => setCustomCategory(e.target.value)}
+                  placeholder="اكتب اسم التصنيف الجديد..."
+                  className="bg-secondary/50 border-primary/50 h-11 flex-1"
+                  autoFocus
+                />
+              </motion.div>
+            )}
           </div>
 
           <div>
@@ -262,7 +293,12 @@ export default function UploadPage() {
 
           <Button
             onClick={handleUpload}
-            disabled={!title.trim() || !selectedFile || uploading}
+            disabled={
+              !title.trim() ||
+              !selectedFile ||
+              uploading ||
+              (category === 'other' && !customCategory.trim())
+            }
             className="w-full h-12 gradient-primary text-white font-semibold text-base"
             data-testid="button-submit-upload"
           >

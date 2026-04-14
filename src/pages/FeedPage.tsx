@@ -293,7 +293,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     );
   }
 
-  // For external URLs: try native <video> first; fall back to iframe if it errors
+  // For external URLs: try native <video> first; if it errors show open-in-tab button immediately
   if (type === 'external' && !videoError) {
     return (
       <div className="absolute inset-0 bg-black">
@@ -309,59 +309,31 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     );
   }
 
-  if (iframeBlocked) {
+  // External URL failed — immediately show open-in-tab button (no iframe fallback)
+  if (type === 'external' && videoError) {
     return (
       <div className="absolute inset-0" onClick={onDoubleTap}>
         {Bg}
-        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-4 px-6">
+        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4 px-6">
           <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
             <ExternalLink className="w-7 h-7 text-white/80" />
           </div>
-          <p className="text-white font-semibold text-base text-center">This video cannot be embedded</p>
+          <p className="text-white font-semibold text-base text-center">لا يمكن تشغيل هذا الفيديو هنا</p>
+          <p className="text-white/60 text-xs text-center max-w-[240px]">افتح الفيديو مباشرة في تبويب جديد</p>
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105"
+            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
           >
             <Play className="w-4 h-4 fill-white" />
-            Open Video
+            افتح الفيديو
           </a>
         </div>
       </div>
     );
   }
-
-  return (
-    <div className="absolute inset-0 bg-black">
-      {Bg}
-      {!iframeLoaded && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
-          <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          <p className="text-white/60 text-xs">Loading video...</p>
-        </div>
-      )}
-      <iframe
-        ref={iframeRef}
-        src={url}
-        className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
-        allowFullScreen
-        allow="autoplay; fullscreen; encrypted-media"
-        onLoad={handleIframeLoad}
-      />
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={e => e.stopPropagation()}
-        className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 text-xs hover:text-white hover:bg-black/70 transition-all"
-      >
-        <ExternalLink className="w-3 h-3" />
-        Open in new tab
-      </a>
-    </div>
-  );
 }
 
 // ── Feed page ──────────────────────────────────────────────────
