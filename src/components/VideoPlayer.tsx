@@ -135,8 +135,8 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
           <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-1">
             <ExternalLink className="w-7 h-7 text-white/80" />
           </div>
-          <p className="text-white font-semibold text-base text-center">لا يمكن تضمين هذا الفيديو</p>
-          <p className="text-white/50 text-xs text-center max-w-[220px]">الموقع يمنع التضمين. شاهد الفيديو مباشرةً:</p>
+          <p className="text-white font-semibold text-base text-center">Cannot embed this video</p>
+          <p className="text-white/50 text-xs text-center max-w-[220px]">This site blocks embedding. Watch the video directly:</p>
           <a
             href={url}
             target="_blank"
@@ -145,7 +145,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
             className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
           >
             <Play className="w-4 h-4 fill-white" />
-            فتح الفيديو
+            Open Video
           </a>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
       {!iframeLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
           <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          <p className="text-white/60 text-xs">جارٍ تحميل الفيديو...</p>
+          <p className="text-white/60 text-xs">Loading video...</p>
         </div>
       )}
       <iframe
@@ -177,7 +177,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
         className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm border border-white/20 text-white/70 text-xs hover:text-white hover:bg-black/60 transition-all z-10"
       >
         <ExternalLink className="w-3 h-3" />
-        فتح
+        Open
       </a>
     </div>
   );

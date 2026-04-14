@@ -14,9 +14,9 @@ export const BADGES: Badge[] = [
   {
     id: 'starter',
     name: 'Starter',
-    nameAr: 'مبتدئ',
+    nameAr: 'Starter',
     icon: '🌱',
-    description: 'بدأت رحلتك في مشاركة المعرفة',
+    description: 'You started your knowledge sharing journey',
     minPoints: 0,
     color: 'text-emerald-400',
     gradient: 'from-emerald-500 to-teal-600',
@@ -25,9 +25,9 @@ export const BADGES: Badge[] = [
   {
     id: 'rising_star',
     name: 'Rising Star',
-    nameAr: 'نجم صاعد',
+    nameAr: 'Rising Star',
     icon: '⭐',
-    description: 'أثبتت تميزك في مشاركة المعرفة',
+    description: 'You proved your excellence in knowledge sharing',
     minPoints: 100,
     color: 'text-yellow-400',
     gradient: 'from-yellow-400 to-orange-500',
@@ -36,9 +36,9 @@ export const BADGES: Badge[] = [
   {
     id: 'expert',
     name: 'Expert',
-    nameAr: 'خبير',
+    nameAr: 'Expert',
     icon: '🔥',
-    description: 'خبير معتمد في مشاركة المعرفة',
+    description: 'Certified expert in knowledge sharing',
     minPoints: 500,
     color: 'text-orange-400',
     gradient: 'from-orange-500 to-red-600',
@@ -47,9 +47,9 @@ export const BADGES: Badge[] = [
   {
     id: 'zain_champion',
     name: 'Zain Champion',
-    nameAr: 'بطل زين',
+    nameAr: 'Zain Champion',
     icon: '💎',
-    description: 'من أبرز المساهمين في منصة زين للمعرفة',
+    description: 'One of the top contributors on Zain Knowledge',
     minPoints: 1000,
     color: 'text-cyan-400',
     gradient: 'from-cyan-400 to-blue-600',
@@ -58,9 +58,9 @@ export const BADGES: Badge[] = [
   {
     id: 'legend',
     name: 'Zain Legend',
-    nameAr: 'أسطورة زين',
+    nameAr: 'Zain Legend',
     icon: '🏆',
-    description: 'أسطورة المعرفة في عائلة زين',
+    description: 'A legend of knowledge in the Zain family',
     minPoints: 2500,
     color: 'text-purple-400',
     gradient: 'from-purple-500 to-pink-600',
@@ -80,20 +80,20 @@ export function getNextBadge(points: number): Badge | null {
 
 export function shareOnLinkedIn(badge: Badge, userName: string) {
   const text = encodeURIComponent(
-    `🎉 حصلت على بادج "${badge.nameAr}" في منصة زين للمعرفة!\n\n` +
+    `🎉 I just earned the "${badge.name}" badge on Zain Knowledge!\n\n` +
     `${badge.icon} ${badge.description}\n\n` +
-    `أنا فخور بمساهمتي في نشر المعرفة داخل عائلة زين.\n\n` +
-    `#زين_المعرفة #ZainKnowledge #LearningAndDevelopment #Zain`
+    `Proud to be contributing to knowledge sharing at Zain Jordan.\n\n` +
+    `#ZainKnowledge #LearningAndDevelopment #Zain`
   );
   const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://zain.com')}&summary=${text}`;
   window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
 }
 
 export const POINTS_RULES = [
-  { action: 'video_approved', points: 50, label: 'فيديو تمت الموافقة عليه' },
-  { action: 'video_liked', points: 5, label: 'إعجاب بفيديوك' },
-  { action: 'comment_received', points: 3, label: 'تعليق على فيديوك' },
-  { action: 'new_follower', points: 10, label: 'متابع جديد' },
-  { action: 'views_milestone', points: 10, label: 'كل 100 مشاهدة' },
-  { action: 'request_completed', points: 20, label: 'إتمام طلب خدمة' },
+  { action: 'video_approved', points: 50, label: 'Video approved' },
+  { action: 'video_liked', points: 5, label: 'Like received' },
+  { action: 'comment_received', points: 3, label: 'Comment received' },
+  { action: 'new_follower', points: 10, label: 'New follower' },
+  { action: 'views_milestone', points: 10, label: 'Every 100 views' },
+  { action: 'request_completed', points: 20, label: 'Request completed' },
 ];

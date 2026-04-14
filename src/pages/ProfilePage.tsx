@@ -203,19 +203,19 @@ export default function ProfilePage() {
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="text-white/70 text-xs font-medium mb-0.5">بادج زين للمعرفة</p>
+                  <p className="text-white/70 text-xs font-medium mb-0.5">Zain Knowledge Badge</p>
                   <div className="flex items-center gap-2">
                     <span className="text-3xl">{currentBadge.icon}</span>
                     <div>
-                      <h3 className="text-white font-bold text-xl leading-none">{currentBadge.nameAr}</h3>
+                      <h3 className="text-white font-bold text-xl leading-none">{currentBadge.name}</h3>
                       <p className="text-white/70 text-xs mt-0.5">{currentBadge.description}</p>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-white/70 text-xs">نقاطك</p>
+                  <p className="text-white/70 text-xs">Your Points</p>
                   <p className="text-white font-bold text-2xl leading-none">{points.toLocaleString()}</p>
-                  <p className="text-white/60 text-xs">نقطة</p>
+                  <p className="text-white/60 text-xs">pts</p>
                 </div>
               </div>
 
@@ -223,8 +223,8 @@ export default function ProfilePage() {
               {nextBadge && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-xs text-white/70 mb-1.5">
-                    <span>التقدم نحو {nextBadge.icon} {nextBadge.nameAr}</span>
-                    <span>{nextBadge.minPoints - points} نقطة متبقية</span>
+                    <span>Progress toward {nextBadge.icon} {nextBadge.name}</span>
+                    <span>{nextBadge.minPoints - points} pts remaining</span>
                   </div>
                   <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                     <motion.div
@@ -244,14 +244,14 @@ export default function ProfilePage() {
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-gray-800 font-semibold text-sm hover:bg-white/90 transition-all hover:scale-105 shadow-md"
                 >
                   <Share2 className="w-4 h-4" />
-                  شارك على LinkedIn
+                  Share on LinkedIn
                 </button>
                 <button
                   onClick={() => setShowPoints(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 text-white font-semibold text-sm hover:bg-white/30 transition-all border border-white/30"
                 >
                   <TrendingUp className="w-4 h-4" />
-                  سجل النقاط
+                  Points History
                 </button>
                 <button
                   onClick={() => setShowBadges(true)}
@@ -269,7 +269,7 @@ export default function ProfilePage() {
           <div className="bg-card rounded-2xl p-4 border border-border/50">
             <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <Zap className="w-4 h-4 text-primary" />
-              كيف تكسب النقاط؟
+              How do you earn points?
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {POINTS_RULES.map(rule => (
@@ -331,8 +331,8 @@ export default function ProfilePage() {
             >
               <div className="flex items-center justify-between p-5 border-b border-border/30">
                 <div>
-                  <h2 className="text-lg font-display font-bold text-foreground">سجل النقاط</h2>
-                  <p className="text-sm text-primary font-semibold">{points.toLocaleString()} نقطة إجمالية</p>
+                  <h2 className="text-lg font-display font-bold text-foreground">Points History</h2>
+                  <p className="text-sm text-primary font-semibold">{points.toLocaleString()} pts total</p>
                 </div>
                 <button onClick={() => setShowPoints(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
                   <X className="w-4 h-4 text-muted-foreground" />
@@ -340,13 +340,13 @@ export default function ProfilePage() {
               </div>
               <div className="overflow-y-auto flex-1 p-4 space-y-2">
                 {pointsHistory.length === 0 ? (
-                  <p className="text-muted-foreground text-sm text-center py-8">لا يوجد سجل نقاط بعد</p>
+                  <p className="text-muted-foreground text-sm text-center py-8">No points history yet</p>
                 ) : (
                   pointsHistory.map(entry => (
                     <div key={entry.id} className="flex items-center justify-between bg-secondary/30 rounded-xl px-4 py-3">
                       <div>
                         <p className="text-sm text-foreground font-medium">{entry.description}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleDateString('ar-SA')}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleDateString('en-US')}</p>
                       </div>
                       <span className="text-primary font-bold text-sm shrink-0">+{entry.points}</span>
                     </div>
@@ -376,7 +376,7 @@ export default function ProfilePage() {
               className="bg-card w-full md:max-w-md rounded-t-3xl md:rounded-2xl border border-border/50 shadow-2xl max-h-[85vh] flex flex-col"
             >
               <div className="flex items-center justify-between p-5 border-b border-border/30">
-                <h2 className="text-lg font-display font-bold text-foreground">بادجات زين للمعرفة</h2>
+                <h2 className="text-lg font-display font-bold text-foreground">Zain Knowledge Badges</h2>
                 <button onClick={() => setShowBadges(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -398,17 +398,17 @@ export default function ProfilePage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className={`font-bold text-base ${unlocked ? 'text-white' : 'text-foreground'}`}>
-                              {badge.nameAr}
+                              {badge.name}
                             </h3>
                             {unlocked && currentBadge.id === badge.id && (
-                              <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">الحالي</span>
+                              <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">Current</span>
                             )}
                           </div>
                           <p className={`text-xs mt-0.5 ${unlocked ? 'text-white/70' : 'text-muted-foreground'}`}>
                             {badge.description}
                           </p>
                           <p className={`text-xs mt-1 font-medium ${unlocked ? 'text-white/80' : 'text-muted-foreground'}`}>
-                            {badge.minPoints === 0 ? 'مجاني للجميع' : `${badge.minPoints.toLocaleString()} نقطة`}
+                            {badge.minPoints === 0 ? 'Free for everyone' : `${badge.minPoints.toLocaleString()} pts`}
                           </p>
                         </div>
                         {unlocked && (
@@ -417,14 +417,14 @@ export default function ProfilePage() {
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-gray-800 font-semibold text-xs hover:bg-white/90 transition-all shrink-0"
                           >
                             <Share2 className="w-3.5 h-3.5" />
-                            شارك
+                            Share
                           </button>
                         )}
                         {!unlocked && (
                           <div className="text-xs text-muted-foreground text-right shrink-0">
-                            <p>تحتاج</p>
+                            <p>Need</p>
                             <p className="font-bold">{(badge.minPoints - points).toLocaleString()}</p>
-                            <p>نقطة</p>
+                            <p>pts</p>
                           </div>
                         )}
                       </div>

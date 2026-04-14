@@ -103,7 +103,7 @@ app.patch('/api/videos/:id', async (req, res) => {
     const [row] = await db.update(videos).set(req.body).where(eq(videos.id, req.params.id)).returning();
     // Award points when video is approved
     if (req.body.status === 'approved' && prev[0]?.status !== 'approved') {
-      await awardPoints(row.user_id, 'video_approved', 50, `تمت الموافقة على الفيديو: ${row.title}`);
+      await awardPoints(row.user_id, 'video_approved', 50, `Your video was approved: ${row.title}`);
     }
     res.json(row);
   } catch (e) {
@@ -119,7 +119,7 @@ app.post('/api/videos/:id/view', async (req, res) => {
       .returning();
     // Award points every 100 views
     if (row.views % 100 === 0) {
-      await awardPoints(row.user_id, 'views_milestone', 10, `وصل الفيديو "${row.title}" إلى ${row.views} مشاهدة`);
+      await awardPoints(row.user_id, 'views_milestone', 10, `Your video "${row.title}" reached ${row.views} views`);
     }
     res.json(row);
   } catch (e) {
@@ -137,7 +137,7 @@ app.post('/api/videos/:id/like', async (req, res) => {
       .returning();
     // Award points to video owner on new like
     if (liked) {
-      await awardPoints(row.user_id, 'video_liked', 5, `أُعجب شخص بفيديوك: ${row.title}`);
+      await awardPoints(row.user_id, 'video_liked', 5, `Someone liked your video: ${row.title}`);
     }
     res.json(row);
   } catch (e) {
@@ -173,7 +173,7 @@ app.post('/api/comments', async (req, res) => {
     // Award points to video owner for receiving a comment
     const [vid] = await db.select().from(videos).where(eq(videos.id, videoId));
     if (vid && vid.user_id !== userId) {
-      await awardPoints(vid.user_id, 'comment_received', 3, `تعليق جديد على فيديوك: ${vid.title}`);
+      await awardPoints(vid.user_id, 'comment_received', 3, `New comment on your video: ${vid.title}`);
     }
     res.json(row);
   } catch (e) {
@@ -251,7 +251,7 @@ app.post('/api/follows', async (req, res) => {
     await db.update(profiles).set({ followers: sql`followers + 1` }).where(eq(profiles.user_id, followingId));
     await db.update(profiles).set({ following: sql`following + 1` }).where(eq(profiles.user_id, followerId));
     // Award points to the person being followed
-    await awardPoints(followingId, 'new_follower', 10, 'حصلت على متابع جديد');
+    await awardPoints(followingId, 'new_follower', 10, 'You have a new follower');
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
@@ -330,7 +330,7 @@ app.patch('/api/requests/:id', async (req, res) => {
     // Award points when request is completed with a rating
     if (req.body.status === 'completed' && req.body.rating) {
       const bonus = req.body.rating === 5 ? 15 : 0;
-      await awardPoints(row.to_user_id, 'request_completed', 20 + bonus, `أتممت طلب خدمة${bonus > 0 ? ' وحصلت على تقييم 5 نجوم!' : ''}`);
+      await awardPoints(row.to_user_id, 'request_completed', 20 + bonus, `Service request completed${bonus > 0 ? ' — 5-star rating bonus!' : ''}`);
     }
     res.json(row);
   } catch (e) {

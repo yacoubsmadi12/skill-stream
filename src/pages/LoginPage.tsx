@@ -7,18 +7,18 @@ import { motion } from 'framer-motion';
 import { Loader2, Play, Zap, BookOpen, Cpu, BarChart2, Globe, Shield, Lightbulb, Wifi, Database } from 'lucide-react';
 
 const REELS = [
-  { icon: BookOpen, title: 'كيفية إدارة المشاريع', dept: 'Project Management', color: 'from-purple-600 to-indigo-700', views: '2.4K' },
-  { icon: Cpu, title: 'أساسيات الذكاء الاصطناعي', dept: 'AI & Data', color: 'from-cyan-500 to-blue-600', views: '5.1K' },
-  { icon: BarChart2, title: 'تحليل بيانات العملاء', dept: 'Sales', color: 'from-emerald-500 to-teal-600', views: '3.8K' },
-  { icon: Globe, title: 'شبكات الجيل الخامس 5G', dept: 'Network', color: 'from-pink-500 to-rose-600', views: '6.2K' },
-  { icon: Shield, title: 'الأمن السيبراني', dept: 'IT Security', color: 'from-orange-500 to-amber-600', views: '4.5K' },
-  { icon: Lightbulb, title: 'الابتكار في الاتصالات', dept: 'Innovation', color: 'from-violet-500 to-purple-700', views: '3.2K' },
-  { icon: Wifi, title: 'تقنيات الشبكات اللاسلكية', dept: 'Network', color: 'from-sky-500 to-cyan-600', views: '2.9K' },
-  { icon: Database, title: 'إدارة قواعد البيانات', dept: 'IT', color: 'from-lime-500 to-green-600', views: '1.8K' },
-  { icon: BookOpen, title: 'مهارات التواصل الفعّال', dept: 'HR', color: 'from-fuchsia-500 to-pink-600', views: '7.3K' },
-  { icon: Cpu, title: 'تطوير التطبيقات', dept: 'Engineering', color: 'from-blue-500 to-indigo-600', views: '4.1K' },
-  { icon: BarChart2, title: 'استراتيجيات التسويق', dept: 'Marketing', color: 'from-red-500 to-orange-600', views: '3.6K' },
-  { icon: Globe, title: 'خدمة العملاء المتميزة', dept: 'Customer Care', color: 'from-teal-500 to-emerald-600', views: '5.9K' },
+  { icon: BookOpen, title: 'How to Manage Projects', dept: 'Project Management', color: 'from-purple-600 to-indigo-700', views: '2.4K' },
+  { icon: Cpu, title: 'AI Fundamentals', dept: 'AI & Data', color: 'from-cyan-500 to-blue-600', views: '5.1K' },
+  { icon: BarChart2, title: 'Customer Data Analytics', dept: 'Sales', color: 'from-emerald-500 to-teal-600', views: '3.8K' },
+  { icon: Globe, title: '5G Networks Deep Dive', dept: 'Network', color: 'from-pink-500 to-rose-600', views: '6.2K' },
+  { icon: Shield, title: 'Cybersecurity Essentials', dept: 'IT Security', color: 'from-orange-500 to-amber-600', views: '4.5K' },
+  { icon: Lightbulb, title: 'Innovation in Telecom', dept: 'Innovation', color: 'from-violet-500 to-purple-700', views: '3.2K' },
+  { icon: Wifi, title: 'Wireless Network Technologies', dept: 'Network', color: 'from-sky-500 to-cyan-600', views: '2.9K' },
+  { icon: Database, title: 'Database Administration', dept: 'IT', color: 'from-lime-500 to-green-600', views: '1.8K' },
+  { icon: BookOpen, title: 'Effective Communication Skills', dept: 'HR', color: 'from-fuchsia-500 to-pink-600', views: '7.3K' },
+  { icon: Cpu, title: 'Mobile App Development', dept: 'Engineering', color: 'from-blue-500 to-indigo-600', views: '4.1K' },
+  { icon: BarChart2, title: 'Marketing Strategies', dept: 'Marketing', color: 'from-red-500 to-orange-600', views: '3.6K' },
+  { icon: Globe, title: 'Excellence in Customer Service', dept: 'Customer Care', color: 'from-teal-500 to-emerald-600', views: '5.9K' },
 ];
 
 function ReelCard({ reel, index }: { reel: typeof REELS[0]; index: number }) {

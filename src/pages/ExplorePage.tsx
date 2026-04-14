@@ -394,7 +394,7 @@ export default function ExplorePage() {
                   return (
                     <div className="mb-6">
                       <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
-                        <VideoIcon className="w-4 h-4 text-primary" /> فيديوهات {selectedProfile.name}
+                        <VideoIcon className="w-4 h-4 text-primary" /> {selectedProfile.name}'s Videos
                       </h3>
                       <div className="grid grid-cols-2 gap-2">
                         {userVideos.slice(0, 4).map(v => (

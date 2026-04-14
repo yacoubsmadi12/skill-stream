@@ -5,8 +5,20 @@ import { useData, Video } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLang } from '@/contexts/LangContext';
 import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import RequestDialog from '@/components/RequestDialog';
+
+function shareVideoOnLinkedIn(video: { title: string; description: string; category: string; user_name: string }) {
+  const text = encodeURIComponent(
+    `📹 Check out "${video.title}" on Ztube — Zain Jordan's knowledge sharing platform!\n\n` +
+    (video.description ? video.description + '\n\n' : '') +
+    `Category: ${video.category} | By ${video.user_name}\n\n` +
+    `#ZainKnowledge #LearningAndDevelopment #Zain`
+  );
+  const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://zain.com')}&summary=${text}`;
+  window.open(url, '_blank', 'noopener,noreferrer,width=600,height=600');
+}
 
 // ── Video URL helpers ──────────────────────────────────────────
 function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' | 'none' {
@@ -152,8 +164,8 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
           <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-1">
             <ExternalLink className="w-7 h-7 text-white/80" />
           </div>
-          <p className="text-white font-semibold text-base text-center">لا يمكن تضمين هذا الفيديو</p>
-          <p className="text-white/50 text-xs text-center max-w-[220px]">الموقع يمنع التضمين. شاهد الفيديو مباشرةً:</p>
+          <p className="text-white font-semibold text-base text-center">This video cannot be embedded</p>
+          <p className="text-white/50 text-xs text-center max-w-[220px]">The site blocks embedding. Watch the video directly:</p>
           <a
             href={url}
             target="_blank"
@@ -162,7 +174,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
             className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
           >
             <Play className="w-4 h-4 fill-white" />
-            فتح الفيديو
+            Open Video
           </a>
         </div>
       </div>
@@ -176,7 +188,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
       {!iframeLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
           <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          <p className="text-white/60 text-xs">جارٍ تحميل الفيديو...</p>
+          <p className="text-white/60 text-xs">Loading video...</p>
         </div>
       )}
       <iframe
@@ -196,7 +208,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
         className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white/70 text-xs hover:text-white hover:bg-black/70 transition-all"
       >
         <ExternalLink className="w-3 h-3" />
-        فتح في تبويب
+        Open in new tab
       </a>
     </div>
   );
@@ -372,7 +384,7 @@ function VideoCard({
             <ActionButton icon={Heart} count={video.likes} active={isLiked} onClick={onLike} activeClass="text-primary fill-primary" />
             <ActionButton icon={MessageCircle} count={video.comments.length} onClick={() => setShowComments(true)} />
             <ActionButton icon={Bookmark} count={video.saves} active={isSaved} onClick={onSave} activeClass="text-warning fill-warning" />
-            <ActionButton icon={Share2} count={0} onClick={() => {}} />
+            <ActionButton icon={Share2} count={0} onClick={() => shareVideoOnLinkedIn(video)} />
             {video.user_id !== currentUserId && (
               <button
                 onClick={() => setShowRequest(true)}

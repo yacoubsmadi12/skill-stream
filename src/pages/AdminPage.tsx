@@ -151,12 +151,12 @@ export default function AdminPage() {
                   <div>
                     <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
                       <Shield className="w-5 h-5 text-primary" />
-                      خدمة الموافقة على الفيديوهات
+                      Video Approval Service
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       {approvalRequired
-                        ? '✅ مفعّلة — كل فيديو يحتاج موافقة الأدمن قبل النشر'
-                        : '⚡ مُلغاة — الفيديوهات تُنشر مباشرة دون مراجعة'}
+                        ? '✅ Active — all videos require admin approval before publishing'
+                        : '⚡ Disabled — videos are published directly without review'}
                     </p>
                   </div>
                   <button
@@ -169,8 +169,8 @@ export default function AdminPage() {
                     } ${toggling ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {approvalRequired
-                      ? <><ToggleRight className="w-5 h-5" /> مفعّل</>
-                      : <><ToggleLeft className="w-5 h-5" /> مُلغى</>
+                      ? <><ToggleRight className="w-5 h-5" /> Active</>
+                      : <><ToggleLeft className="w-5 h-5" /> Disabled</>
                     }
                   </button>
                 </div>
@@ -179,15 +179,15 @@ export default function AdminPage() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div className={`rounded-lg p-3 border ${approvalRequired ? 'border-success/40 bg-success/10' : 'border-border/30 bg-secondary/20'}`}>
                     <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                      <Shield className="w-3.5 h-3.5 text-success" /> تفعيل الموافقة
+                      <Shield className="w-3.5 h-3.5 text-success" /> Enable Approval
                     </p>
-                    <p className="text-xs text-muted-foreground">الفيديو يبقى pending حتى يوافق الأدمن</p>
+                    <p className="text-xs text-muted-foreground">Video stays pending until admin approves</p>
                   </div>
                   <div className={`rounded-lg p-3 border ${!approvalRequired ? 'border-warning/40 bg-warning/10' : 'border-border/30 bg-secondary/20'}`}>
                     <p className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                      <Play className="w-3.5 h-3.5 text-warning" /> إلغاء الموافقة
+                      <Play className="w-3.5 h-3.5 text-warning" /> Disable Approval
                     </p>
-                    <p className="text-xs text-muted-foreground">الفيديو يُنشر مباشرة بدون مراجعة</p>
+                    <p className="text-xs text-muted-foreground">Video published directly without review</p>
                   </div>
                 </div>
               </motion.div>
@@ -256,7 +256,7 @@ export default function AdminPage() {
                 <h1 className="text-2xl font-display font-bold text-foreground">{T.admin.videos}</h1>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="bg-warning/15 text-warning px-2 py-1 rounded-full font-medium">
-                    {videos.filter(v => v.status === 'pending').length} بانتظار المراجعة
+                    {videos.filter(v => v.status === 'pending').length} awaiting review
                   </span>
                 </div>
               </div>
@@ -272,7 +272,7 @@ export default function AdminPage() {
                     <button
                       onClick={() => setPreviewVideo(v)}
                       className="relative w-16 h-16 rounded-lg shrink-0 group overflow-hidden"
-                      title="معاينة الفيديو"
+                      title="Preview video"
                     >
                       <div className={`w-full h-full bg-gradient-to-br ${v.thumbnail_color}`} />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -300,16 +300,16 @@ export default function AdminPage() {
                         onClick={() => setPreviewVideo(v)}
                         className="h-8 text-xs gap-1.5"
                       >
-                        <Play className="w-3 h-3" /> معاينة
+                        <Play className="w-3 h-3" /> Preview
                       </Button>
 
                       {v.status === 'pending' && (
                         <>
                           <Button size="sm" onClick={() => updateVideoStatus(v.id, 'approved')} className="bg-success text-success-foreground h-8 gap-1.5 text-xs">
-                            <Check className="w-3.5 h-3.5" /> قبول
+                            <Check className="w-3.5 h-3.5" /> Approve
                           </Button>
                           <Button size="sm" onClick={() => updateVideoStatus(v.id, 'rejected')} variant="destructive" className="h-8 gap-1.5 text-xs">
-                            <X className="w-3.5 h-3.5" /> رفض
+                            <X className="w-3.5 h-3.5" /> Reject
                           </Button>
                         </>
                       )}
@@ -523,7 +523,7 @@ export default function AdminPage() {
                       onClick={() => { updateVideoStatus(previewVideo.id, 'approved'); setPreviewVideo(null); }}
                       className="bg-success text-success-foreground gap-1.5"
                     >
-                      <Check className="w-3.5 h-3.5" /> موافقة
+                      <Check className="w-3.5 h-3.5" /> Approve
                     </Button>
                     <Button
                       size="sm"
@@ -531,7 +531,7 @@ export default function AdminPage() {
                       onClick={() => { updateVideoStatus(previewVideo.id, 'rejected'); setPreviewVideo(null); }}
                       className="gap-1.5"
                     >
-                      <X className="w-3.5 h-3.5" /> رفض
+                      <X className="w-3.5 h-3.5" /> Reject
                     </Button>
                   </div>
                 )}

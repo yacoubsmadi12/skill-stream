@@ -13,6 +13,7 @@ import UploadPage from "@/pages/UploadPage";
 import ProfilePage from "@/pages/ProfilePage";
 import RequestsPage from "@/pages/RequestsPage";
 import AdminPage from "@/pages/AdminPage";
+import SavedPage from "@/pages/SavedPage";
 import BottomNav from "@/components/BottomNav";
 import DesktopNav from "@/components/DesktopNav";
 import NotFound from "@/pages/NotFound";
@@ -49,6 +50,7 @@ function AppRoutes() {
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/requests" element={<RequestsPage />} />
+          <Route path="/saved" element={<SavedPage />} />
           <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

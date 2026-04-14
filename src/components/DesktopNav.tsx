@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLang } from '@/contexts/LangContext';
-import { Home, Search, PlusCircle, MessageSquare, User, Shield, Play, LogOut } from 'lucide-react';
+import { Home, Search, PlusCircle, MessageSquare, User, Shield, Play, LogOut, Bookmark } from 'lucide-react';
 
 export default function DesktopNav() {
   const { user, logout, isAdmin } = useAuth();
@@ -12,6 +12,7 @@ export default function DesktopNav() {
     { to: '/', icon: Home, label: T.nav.feed },
     { to: '/explore', icon: Search, label: T.nav.explore },
     { to: '/upload', icon: PlusCircle, label: T.nav.upload },
+    { to: '/saved', icon: Bookmark, label: 'Saved' },
     { to: '/requests', icon: MessageSquare, label: T.nav.requests },
     { to: '/profile', icon: User, label: T.nav.profile },
   ];

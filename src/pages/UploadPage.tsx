@@ -197,7 +197,7 @@ export default function UploadPage() {
           </>
         ) : (
           <div className="mb-5">
-            <label className="text-sm text-muted-foreground mb-2 block">رابط الفيديو</label>
+            <label className="text-sm text-muted-foreground mb-2 block">Video Link</label>
             <Input
               value={videoLinkUrl}
               onChange={e => setVideoLinkUrl(e.target.value)}
@@ -210,9 +210,9 @@ export default function UploadPage() {
               const isVimeo = videoLinkUrl.match(/vimeo\.com/);
               const isDirect = videoLinkUrl.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i);
               if (isYT || isVimeo || isDirect) {
-                return <p className="text-xs text-emerald-400 mt-1.5">✓ سيتم تشغيل الفيديو مباشرة داخل التطبيق</p>;
+                return <p className="text-xs text-emerald-400 mt-1.5">✓ This video will play directly inside the app</p>;
               }
-              return <p className="text-xs text-amber-400 mt-1.5">⚠ سيحاول الموقع تضمين هذا الرابط — إن لم ينجح سيظهر زر لفتحه في تبويب جديد</p>;
+              return <p className="text-xs text-amber-400 mt-1.5">⚠ The app will try to embed this link — if it fails, a button to open it in a new tab will appear</p>;
             })()}
           </div>
         )}
