@@ -40,7 +40,7 @@ function getYouTubeId(url: string): string | null {
 
 function getYouTubeEmbedUrl(url: string): string {
   const id = getYouTubeId(url) || '';
-  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1`;
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1`;
 }
 
 function getVimeoEmbedUrl(url: string): string {
@@ -59,11 +59,21 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   const [iframeBlocked, setIframeBlocked] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [ytBlocked, setYtBlocked] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const type = getVideoType(url);
   const ytId = type === 'youtube' ? getYouTubeId(url) : null;
   const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+
+  // Reset state when url changes
+  useEffect(() => {
+    setPlaying(false);
+    setIframeBlocked(false);
+    setIframeLoaded(false);
+    setVideoError(false);
+    setYtBlocked(false);
+  }, [url]);
 
   const Bg = thumbnailUrl ? (
     <div className="absolute inset-0">
@@ -78,6 +88,22 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
     setIframeLoaded(true);
   };
+
+  // Detect YouTube embedding errors via postMessage (codes 100/101/150 = not embeddable)
+  useEffect(() => {
+    if (!playing || type !== 'youtube') return;
+    const handleMessage = (e: MessageEvent) => {
+      if (!e.data) return;
+      try {
+        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (data.event === 'onError' && [100, 101, 150].includes(Number(data.info))) {
+          setYtBlocked(true);
+        }
+      } catch { /* ignore parse errors */ }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [playing, type]);
 
   useEffect(() => {
     if (playing && (type === 'external') && videoError) {
@@ -131,6 +157,30 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   }
 
   if (type === 'youtube') {
+    if (ytBlocked) {
+      return (
+        <div className="absolute inset-0" onClick={onDoubleTap}>
+          {Bg}
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4 px-6">
+            <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+              <ExternalLink className="w-7 h-7 text-white/80" />
+            </div>
+            <p className="text-white font-semibold text-base text-center">لا يمكن تشغيل هذا الفيديو هنا</p>
+            <p className="text-white/60 text-xs text-center max-w-[220px]">صاحب الفيديو أوقف التشغيل المضمّن. شاهده مباشرة على يوتيوب.</p>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-all hover:scale-105 shadow-lg"
+            >
+              <Play className="w-4 h-4 fill-white" />
+              شاهد على يوتيوب
+            </a>
+          </div>
+        </div>
+      );
+    }
     const embedUrl = getYouTubeEmbedUrl(url);
     return (
       <div className="absolute inset-0 bg-black">
