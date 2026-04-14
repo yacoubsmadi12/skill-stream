@@ -1,17 +1,41 @@
 import { useState } from 'react';
 import { useData, Video } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLang } from '@/contexts/LangContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bookmark, Play, Heart, Eye, X, Trash2 } from 'lucide-react';
+import { Bookmark, Play, Heart, Eye, X, Trash2, MessageCircle, Send, UserPlus, UserCheck } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
+import { Input } from '@/components/ui/input';
 
 export default function SavedPage() {
-  const { videos, savedVideos, toggleSave, categories } = useData();
+  const { videos, savedVideos, likedVideos, followedUsers, toggleSave, toggleLike, toggleFollow, addComment, categories } = useData();
+  const { user } = useAuth();
+  const { T } = useLang();
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [showComments, setShowComments] = useState(false);
 
   const saved = videos.filter(v => savedVideos.has(v.id));
 
   const getCategoryIcon = (catName: string) =>
     categories.find(c => c.name === catName)?.icon || '📁';
+
+  const currentVideo = selectedVideo ? videos.find(v => v.id === selectedVideo.id) ?? selectedVideo : null;
+  const isLiked = currentVideo ? likedVideos.has(currentVideo.id) : false;
+  const isSaved = currentVideo ? savedVideos.has(currentVideo.id) : false;
+  const isFollowing = currentVideo ? followedUsers.has(currentVideo.user_id) : false;
+
+  const submitComment = () => {
+    if (!currentVideo || !commentText.trim()) return;
+    addComment(currentVideo.id, user?.name || 'Anonymous', commentText.trim());
+    setCommentText('');
+  };
+
+  const handleClose = () => {
+    setSelectedVideo(null);
+    setShowComments(false);
+    setCommentText('');
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-8">
@@ -56,7 +80,7 @@ export default function SavedPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.05 }}
                 className="relative aspect-[9/16] rounded-2xl overflow-hidden group cursor-pointer"
-                onClick={() => setSelectedVideo(video)}
+                onClick={() => { setSelectedVideo(video); setShowComments(false); }}
               >
                 {/* Thumbnail */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${video.thumbnail_color}`} />
@@ -103,65 +127,155 @@ export default function SavedPage() {
         )}
       </div>
 
-      {/* Video preview modal */}
+      {/* Video modal */}
       <AnimatePresence>
-        {selectedVideo && (
+        {currentVideo && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={e => { if (e.target === e.currentTarget) setSelectedVideo(null); }}
+            onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
           >
             <motion.div
               initial={{ scale: 0.92, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.92, opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="bg-card rounded-2xl border border-border/50 shadow-2xl w-full max-w-md overflow-hidden"
+              className="bg-card rounded-2xl border border-border/50 shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <div className="flex items-center justify-between p-4 border-b border-border/30">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border/30 shrink-0">
                 <div className="flex-1 min-w-0 mr-2">
-                  <h3 className="font-display font-bold text-foreground truncate">{selectedVideo.title}</h3>
+                  <h3 className="font-display font-bold text-foreground truncate">{currentVideo.title}</h3>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <p className="text-xs text-muted-foreground">{selectedVideo.user_name}</p>
+                    <p className="text-xs text-muted-foreground">{currentVideo.user_name}</p>
                     <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center gap-1">
-                      {getCategoryIcon(selectedVideo.category)} {selectedVideo.category}
+                      {getCategoryIcon(currentVideo.category)} {currentVideo.category}
                     </span>
                   </div>
                 </div>
                 <button
-                  onClick={() => setSelectedVideo(null)}
+                  onClick={handleClose}
                   className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors shrink-0"
                 >
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
 
-              <div className="relative aspect-video bg-black">
+              {/* Video player */}
+              <div className="relative aspect-video bg-black shrink-0">
                 <VideoPlayer
-                  videoUrl={selectedVideo.video_url}
-                  thumbnailColor={selectedVideo.thumbnail_color}
+                  videoUrl={currentVideo.video_url}
+                  thumbnailColor={currentVideo.thumbnail_color}
                 />
               </div>
 
-              <div className="p-4">
-                {selectedVideo.description && (
-                  <p className="text-sm text-foreground/80 mb-3 line-clamp-2">{selectedVideo.description}</p>
-                )}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1"><Heart className="w-4 h-4" /> {selectedVideo.likes}</span>
-                    <span className="flex items-center gap-1"><Eye className="w-4 h-4" /> {selectedVideo.views}</span>
-                  </div>
+              {/* Actions bar */}
+              <div className="flex items-center gap-1 px-4 py-3 border-b border-border/30 shrink-0">
+                {/* Like */}
+                <button
+                  onClick={() => toggleLike(currentVideo.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isLiked ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                >
+                  <Heart className={`w-4 h-4 ${isLiked ? 'fill-primary' : ''}`} />
+                  <span>{currentVideo.likes}</span>
+                </button>
+
+                {/* Comments toggle */}
+                <button
+                  onClick={() => setShowComments(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${showComments ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>{currentVideo.comments?.length ?? 0}</span>
+                </button>
+
+                {/* Views */}
+                <span className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground">
+                  <Eye className="w-4 h-4" />
+                  <span>{currentVideo.views}</span>
+                </span>
+
+                <div className="flex-1" />
+
+                {/* Follow */}
+                {currentVideo.user_id !== user?.id && (
                   <button
-                    onClick={() => { toggleSave(selectedVideo.id); setSelectedVideo(null); }}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-warning/15 text-warning hover:bg-warning/25 transition-colors"
+                    onClick={() => toggleFollow(currentVideo.user_id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isFollowing ? 'bg-secondary text-foreground' : 'gradient-primary text-primary-foreground'}`}
                   >
-                    <Bookmark className="w-3.5 h-3.5 fill-warning" /> Remove from favorites
+                    {isFollowing ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                    {isFollowing ? T.feed.following : T.feed.follow}
                   </button>
-                </div>
+                )}
+
+                {/* Save / unsave */}
+                <button
+                  onClick={() => { toggleSave(currentVideo.id); if (isSaved) handleClose(); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-warning/15 text-warning hover:bg-warning/25 transition-colors"
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-warning' : ''}`} />
+                  {isSaved ? 'Unsave' : 'Save'}
+                </button>
               </div>
+
+              {/* Description */}
+              {currentVideo.description && (
+                <div className="px-4 pt-3 shrink-0">
+                  <p className="text-sm text-foreground/80 line-clamp-2">{currentVideo.description}</p>
+                </div>
+              )}
+
+              {/* Comments section */}
+              <AnimatePresence>
+                {showComments && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pt-3 pb-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{T.feed.comments}</p>
+                      <div className="space-y-2 max-h-36 overflow-y-auto scrollbar-hide">
+                        {(!currentVideo.comments || currentVideo.comments.length === 0) ? (
+                          <p className="text-xs text-muted-foreground py-2">{T.feed.noComments}</p>
+                        ) : (
+                          currentVideo.comments.map(c => (
+                            <div key={c.id} className="flex gap-2">
+                              <div className="w-6 h-6 rounded-full gradient-primary shrink-0 flex items-center justify-center text-[10px] font-bold text-primary-foreground">
+                                {c.user_name[0]?.toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="text-xs font-semibold text-foreground">{c.user_name} </span>
+                                <span className="text-xs text-foreground/80">{c.text}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    <div className="px-4 pb-4 pt-2 flex gap-2">
+                      <Input
+                        value={commentText}
+                        onChange={e => setCommentText(e.target.value)}
+                        placeholder={T.feed.addComment}
+                        className="bg-secondary/50 border-border/50 text-sm h-9"
+                        onKeyDown={e => e.key === 'Enter' && submitComment()}
+                      />
+                      <button
+                        onClick={submitComment}
+                        disabled={!commentText.trim()}
+                        className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center disabled:opacity-40 shrink-0"
+                      >
+                        <Send className="w-4 h-4 text-primary-foreground" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
