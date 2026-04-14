@@ -17,7 +17,7 @@ function getYouTubeEmbedUrl(url: string): string {
   const shortsMatch = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
   const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]+)/);
   const id = watchMatch?.[1] || shortMatch?.[1] || embedMatch?.[1] || shortsMatch?.[1] || liveMatch?.[1] || '';
-  return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1`;
 }
 
 function getVimeoEmbedUrl(url: string): string {
@@ -92,8 +92,9 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
         <iframe
           src={getYouTubeEmbedUrl(url)}
           className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
         />
       </div>
     );

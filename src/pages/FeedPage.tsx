@@ -40,13 +40,13 @@ function getYouTubeId(url: string): string | null {
 
 function getYouTubeEmbedUrl(url: string): string {
   const id = getYouTubeId(url) || '';
-  return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1`;
 }
 
 function getVimeoEmbedUrl(url: string): string {
   const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
   const id = match?.[1] || '';
-  return `https://player.vimeo.com/video/${id}?autoplay=1`;
+  return `https://player.vimeo.com/video/${id}?autoplay=1&playsinline=1`;
 }
 
 // ── Smart video player ─────────────────────────────────────────
@@ -91,8 +91,11 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     return (
       <div className="absolute inset-0" onClick={onDoubleTap}>
         {Bg}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Play className="w-16 h-16 text-white/30" />
+        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-3">
+          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+            <Play className="w-7 h-7 text-white/50 ml-1" />
+          </div>
+          <p className="text-white/60 text-sm font-medium">No video uploaded yet</p>
         </div>
       </div>
     );
@@ -115,14 +118,27 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   }
 
   if (type === 'youtube') {
+    const embedUrl = getYouTubeEmbedUrl(url);
     return (
       <div className="absolute inset-0 bg-black">
         <iframe
-          src={getYouTubeEmbedUrl(url)}
+          src={embedUrl}
           className="absolute inset-0 w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
         />
+        {/* Fallback open-in-youtube button */}
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white/80 text-xs hover:text-white hover:bg-black/80 transition-all"
+        >
+          <ExternalLink className="w-3 h-3" />
+          Watch on YouTube
+        </a>
       </div>
     );
   }
@@ -135,6 +151,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
           className="absolute inset-0 w-full h-full"
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
         />
       </div>
     );
