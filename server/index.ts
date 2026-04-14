@@ -3,7 +3,7 @@ import cors from 'cors';
 import { db } from './db.js';
 import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications } from './schema.js';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
-import { seedIfEmpty } from './seed.js';
+import { seedIfEmpty, fillVideoUrls } from './seed.js';
 
 const app = express();
 app.use(cors());
@@ -417,4 +417,5 @@ const PORT = parseInt(process.env.PORT || '3001');
 app.listen(PORT, '0.0.0.0', async () => {
   console.log(`Server running on port ${PORT}`);
   await seedIfEmpty();
+  await fillVideoUrls();
 });

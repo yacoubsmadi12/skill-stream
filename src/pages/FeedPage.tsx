@@ -40,7 +40,7 @@ function getYouTubeId(url: string): string | null {
 
 function getYouTubeEmbedUrl(url: string): string {
   const id = getYouTubeId(url) || '';
-  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1`;
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
 }
 
 function getVimeoEmbedUrl(url: string): string {
@@ -130,10 +130,10 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
 
     window.addEventListener('message', handleMessage);
 
-    // Fallback: if video hasn't started playing in 5s, show the YouTube link instead
+    // Fallback: if video hasn't started playing in 3s, show the YouTube link instead
     const fallback = setTimeout(() => {
       if (!ytActuallyPlayingRef.current) setYtBlocked(true);
-    }, 5000);
+    }, 3000);
 
     return () => {
       window.removeEventListener('message', handleMessage);

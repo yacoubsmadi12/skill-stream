@@ -21,7 +21,7 @@ function getYouTubeId(url: string): string | null {
 
 function getYouTubeEmbedUrl(url: string): string {
   const id = getYouTubeId(url) || '';
-  return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1`;
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}`;
 }
 
 function getVimeoEmbedUrl(url: string): string {
@@ -111,7 +111,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
 
     const fallback = setTimeout(() => {
       if (!ytActuallyPlayingRef.current) setYtBlocked(true);
-    }, 5000);
+    }, 3000);
 
     return () => {
       window.removeEventListener('message', handleMessage);
