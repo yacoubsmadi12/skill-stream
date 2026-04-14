@@ -320,7 +320,12 @@ export default function UploadPage() {
 
           <Button
             onClick={handleUpload}
-            disabled={!title.trim() || uploading}
+            disabled={
+              !title.trim() ||
+              uploading ||
+              (uploadMode === 'file' && !selectedFile) ||
+              (uploadMode === 'link' && !videoLinkUrl.trim())
+            }
             className="w-full h-12 gradient-primary text-white font-semibold text-base"
             data-testid="button-submit-upload"
           >

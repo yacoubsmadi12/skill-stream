@@ -98,6 +98,17 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
       />
       <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-10`} />
     </div>
+  ) : (type === 'video' && url) ? (
+    <div className="absolute inset-0 bg-black">
+      <video
+        src={url}
+        preload="metadata"
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-contain"
+        onLoadedMetadata={e => { (e.target as HTMLVideoElement).currentTime = 0.1; }}
+      />
+    </div>
   ) : (
     <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
   );
@@ -271,11 +282,11 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   if (type === 'video') {
     return (
       <div className="absolute inset-0 bg-black">
-        {Bg}
         <video
           src={url}
           autoPlay
           controls
+          playsInline
           className="absolute inset-0 w-full h-full object-contain"
         />
       </div>
@@ -286,11 +297,11 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   if (type === 'external' && !videoError) {
     return (
       <div className="absolute inset-0 bg-black">
-        {Bg}
         <video
           src={url}
           autoPlay
           controls
+          playsInline
           className="absolute inset-0 w-full h-full object-contain"
           onError={() => setVideoError(true)}
         />
