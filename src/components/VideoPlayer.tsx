@@ -36,6 +36,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
   const [playing, setPlaying] = useState(false);
   const [iframeBlocked, setIframeBlocked] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const type = getVideoType(url);
@@ -48,13 +49,13 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
   };
 
   useEffect(() => {
-    if (playing && type === 'external') {
+    if (playing && type === 'external' && videoError) {
       blockTimerRef.current = setTimeout(() => {
         if (!iframeLoaded) setIframeBlocked(true);
       }, 5000);
     }
     return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current); };
-  }, [playing, type, iframeLoaded]);
+  }, [playing, type, iframeLoaded, videoError]);
 
   const handleClick = () => onDoubleTap?.();
 
@@ -81,6 +82,18 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
             <Play className="w-9 h-9 text-white fill-white ml-1" />
           </button>
         </div>
+        {type === 'youtube' && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white/80 text-xs hover:text-white hover:bg-black/80 transition-all"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Watch on YouTube
+          </a>
+        )}
       </div>
     );
   }
@@ -96,6 +109,16 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
         />
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white/80 text-xs hover:text-white hover:bg-black/80 transition-all"
+        >
+          <ExternalLink className="w-3 h-3" />
+          Watch on YouTube
+        </a>
       </div>
     );
   }
@@ -123,6 +146,22 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
           autoPlay
           controls
           className="absolute inset-0 w-full h-full object-contain"
+        />
+      </div>
+    );
+  }
+
+  // For external URLs: try native <video> first; fall back to iframe if it errors
+  if (type === 'external' && !videoError) {
+    return (
+      <div className="absolute inset-0 bg-black">
+        {Bg}
+        <video
+          src={url}
+          autoPlay
+          controls
+          className="absolute inset-0 w-full h-full object-contain"
+          onError={() => setVideoError(true)}
         />
       </div>
     );
