@@ -62,6 +62,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   const [ytBlocked, setYtBlocked] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ytActuallyPlayingRef = useRef(false);
   const type = getVideoType(url);
   const ytId = type === 'youtube' ? getYouTubeId(url) : null;
   const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
@@ -73,6 +74,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     setIframeLoaded(false);
     setVideoError(false);
     setYtBlocked(false);
+    ytActuallyPlayingRef.current = false;
   }, [url]);
 
   const Bg = thumbnailUrl ? (
@@ -89,20 +91,38 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
     setIframeLoaded(true);
   };
 
-  // Detect YouTube embedding errors via postMessage (codes 100/101/150 = not embeddable)
+  // Dual detection: postMessage errors + 8-second timeout fallback
+  // Handles cases where postMessage doesn't reach (nested iframes, CSP, etc.)
   useEffect(() => {
     if (!playing || type !== 'youtube') return;
+    ytActuallyPlayingRef.current = false;
+
     const handleMessage = (e: MessageEvent) => {
-      if (!e.data) return;
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (!data?.event) return;
+        // Error codes: 100 = not found, 101/150 = embedding not allowed
         if (data.event === 'onError' && [100, 101, 150].includes(Number(data.info))) {
           setYtBlocked(true);
         }
-      } catch { /* ignore parse errors */ }
+        // State 1 = playing — confirms the video is actually running
+        if (data.event === 'onStateChange' && Number(data.info) === 1) {
+          ytActuallyPlayingRef.current = true;
+        }
+      } catch { /* ignore */ }
     };
+
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+
+    // Fallback: if video hasn't started playing in 5s, show the YouTube link instead
+    const fallback = setTimeout(() => {
+      if (!ytActuallyPlayingRef.current) setYtBlocked(true);
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(fallback);
+    };
   }, [playing, type]);
 
   useEffect(() => {
@@ -129,6 +149,31 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   }
 
   if (!playing) {
+    if (type === 'youtube') {
+      return (
+        <div className="absolute inset-0" onClick={onDoubleTap}>
+          {Bg}
+          <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center gap-3">
+            <button
+              onClick={e => { e.stopPropagation(); setPlaying(true); }}
+              className="w-20 h-20 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white/70 flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
+            >
+              <Play className="w-9 h-9 text-white fill-white ml-1" />
+            </button>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-red-600/90 backdrop-blur-sm text-white text-sm font-semibold hover:bg-red-600 transition-all hover:scale-105 shadow-lg"
+            >
+              <ExternalLink className="w-4 h-4" />
+              شاهد على يوتيوب
+            </a>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="absolute inset-0" onClick={onDoubleTap}>
         {Bg}
@@ -140,18 +185,6 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
             <Play className="w-9 h-9 text-white fill-white ml-1" />
           </button>
         </div>
-        {type === 'youtube' && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white/80 text-xs hover:text-white hover:bg-black/80 transition-all"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Watch on YouTube
-          </a>
-        )}
       </div>
     );
   }
