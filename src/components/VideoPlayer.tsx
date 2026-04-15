@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, ExternalLink } from 'lucide-react';
+import { Play, ExternalLink, Loader2 } from 'lucide-react';
 
 function getVideoType(url: string): 'youtube' | 'vimeo' | 'video' | 'external' | 'none' {
   if (!url) return 'none';
@@ -21,7 +21,7 @@ function getYouTubeId(url: string): string | null {
 
 function getYouTubeEmbedUrl(url: string): string {
   const id = getYouTubeId(url) || '';
-  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}`;
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=0&rel=0&playsinline=1&enablejsapi=1`;
 }
 
 function getVimeoEmbedUrl(url: string): string {
@@ -38,14 +38,11 @@ interface VideoPlayerProps {
 
 export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap }: VideoPlayerProps) {
   const [playing, setPlaying] = useState(false);
-  const [iframeBlocked, setIframeBlocked] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
-  const [ytBlocked, setYtBlocked] = useState(false);
+  const [ytHardBlocked, setYtHardBlocked] = useState(false);
   const [thumbQuality, setThumbQuality] = useState<'maxresdefault' | 'hqdefault' | 'mqdefault' | 'failed'>('maxresdefault');
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const blockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const ytActuallyPlayingRef = useRef(false);
   const type = getVideoType(url);
   const ytId = type === 'youtube' ? getYouTubeId(url) : null;
   const thumbSrc = ytId && thumbQuality !== 'failed'
@@ -59,74 +56,38 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
     );
   };
 
-  // Reset state when url changes
   useEffect(() => {
     setPlaying(false);
-    setIframeBlocked(false);
     setIframeLoaded(false);
     setVideoError(false);
-    setYtBlocked(false);
+    setYtHardBlocked(false);
     setThumbQuality('maxresdefault');
-    ytActuallyPlayingRef.current = false;
   }, [url]);
 
-  const Bg = thumbSrc ? (
-    <div className="absolute inset-0">
-      <img
-        src={thumbSrc}
-        alt=""
-        className="w-full h-full object-cover"
-        onError={handleThumbError}
-      />
-      <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-10`} />
-    </div>
-  ) : (
-    <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
-  );
-
-  const handleIframeLoad = () => {
-    if (blockTimerRef.current) clearTimeout(blockTimerRef.current);
-    setIframeLoaded(true);
-  };
-
-  // Dual detection: postMessage errors + 8-second timeout fallback
+  // Only block on actual YouTube error codes (not timeout)
   useEffect(() => {
     if (!playing || type !== 'youtube') return;
-    ytActuallyPlayingRef.current = false;
-
     const handleMessage = (e: MessageEvent) => {
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (!data?.event) return;
         if (data.event === 'onError' && [100, 101, 150].includes(Number(data.info))) {
-          setYtBlocked(true);
-        }
-        if (data.event === 'onStateChange' && Number(data.info) === 1) {
-          ytActuallyPlayingRef.current = true;
+          setYtHardBlocked(true);
         }
       } catch { /* ignore */ }
     };
-
     window.addEventListener('message', handleMessage);
-
-    const fallback = setTimeout(() => {
-      if (!ytActuallyPlayingRef.current) setYtBlocked(true);
-    }, 3000);
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      clearTimeout(fallback);
-    };
+    return () => window.removeEventListener('message', handleMessage);
   }, [playing, type]);
 
-  useEffect(() => {
-    if (playing && type === 'external' && videoError) {
-      blockTimerRef.current = setTimeout(() => {
-        if (!iframeLoaded) setIframeBlocked(true);
-      }, 5000);
-    }
-    return () => { if (blockTimerRef.current) clearTimeout(blockTimerRef.current); };
-  }, [playing, type, iframeLoaded, videoError]);
+  const Bg = thumbSrc ? (
+    <div className="absolute inset-0">
+      <img src={thumbSrc} alt="" className="w-full h-full object-cover" onError={handleThumbError} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor} opacity-10`} />
+    </div>
+  ) : (
+    <div className={`absolute inset-0 bg-gradient-to-br ${thumbnailColor}`} />
+  );
 
   const handleClick = () => onDoubleTap?.();
 
@@ -142,17 +103,17 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
   }
 
   if (!playing) {
-    if (type === 'youtube') {
-      return (
-        <div className="absolute inset-0" onClick={handleClick}>
-          {Bg}
-          <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center gap-3">
-            <button
-              onClick={e => { e.stopPropagation(); setPlaying(true); }}
-              className="w-20 h-20 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white/70 flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
-            >
-              <Play className="w-9 h-9 text-white fill-white ml-1" />
-            </button>
+    return (
+      <div className="absolute inset-0" onClick={handleClick}>
+        {Bg}
+        <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center gap-3">
+          <button
+            onClick={e => { e.stopPropagation(); setPlaying(true); }}
+            className="w-20 h-20 rounded-full bg-black/60 backdrop-blur-sm border-2 border-white/70 flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
+          >
+            <Play className="w-9 h-9 text-white fill-white ml-1" />
+          </button>
+          {type === 'youtube' && (
             <a
               href={url}
               target="_blank"
@@ -163,27 +124,14 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
               <ExternalLink className="w-4 h-4" />
               شاهد على يوتيوب
             </a>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div className="absolute inset-0" onClick={handleClick}>
-        {Bg}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <button
-            onClick={e => { e.stopPropagation(); setPlaying(true); }}
-            className="w-20 h-20 rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center hover:scale-110 transition-transform"
-          >
-            <Play className="w-9 h-9 text-white fill-white ml-1" />
-          </button>
+          )}
         </div>
       </div>
     );
   }
 
   if (type === 'youtube') {
-    if (ytBlocked) {
+    if (ytHardBlocked) {
       return (
         <div className="absolute inset-0" onClick={handleClick}>
           {Bg}
@@ -210,12 +158,20 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
     return (
       <div className="absolute inset-0 bg-black">
         {Bg}
+        {!iframeLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
+            <Loader2 className="w-10 h-10 text-white/60 animate-spin" />
+            <p className="text-white/50 text-xs">جاري تحميل الفيديو...</p>
+          </div>
+        )}
         <iframe
+          ref={iframeRef}
           src={getYouTubeEmbedUrl(url)}
-          className="absolute inset-0 w-full h-full"
+          className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
+          onLoad={() => setIframeLoaded(true)}
         />
         <a
           href={url}
@@ -225,7 +181,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
           className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/20 text-white/80 text-xs hover:text-white hover:bg-black/80 transition-all"
         >
           <ExternalLink className="w-3 h-3" />
-          Watch on YouTube
+          يوتيوب
         </a>
       </div>
     );
@@ -253,13 +209,21 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
           src={url}
           autoPlay
           controls
+          playsInline
           className="absolute inset-0 w-full h-full object-contain"
+          onError={() => setVideoError(true)}
         />
+        {videoError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60">
+            <Play className="w-10 h-10 text-white/30" />
+            <p className="text-white/60 text-sm">تعذّر تشغيل الفيديو</p>
+          </div>
+        )}
       </div>
     );
   }
 
-  // For external URLs: try native <video> first; fall back to iframe if it errors
+  // External URL: try native <video> first, then iframe
   if (type === 'external' && !videoError) {
     return (
       <div className="absolute inset-0 bg-black">
@@ -268,6 +232,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
           src={url}
           autoPlay
           controls
+          playsInline
           className="absolute inset-0 w-full h-full object-contain"
           onError={() => setVideoError(true)}
         />
@@ -275,38 +240,14 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
     );
   }
 
-  if (iframeBlocked) {
-    return (
-      <div className="absolute inset-0" onClick={handleClick}>
-        {Bg}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6">
-          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-1">
-            <ExternalLink className="w-7 h-7 text-white/80" />
-          </div>
-          <p className="text-white font-semibold text-base text-center">Cannot embed this video</p>
-          <p className="text-white/50 text-xs text-center max-w-[220px]">This site blocks embedding. Watch the video directly:</p>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm hover:bg-white/30 transition-all hover:scale-105 shadow-lg"
-          >
-            <Play className="w-4 h-4 fill-white" />
-            Open Video
-          </a>
-        </div>
-      </div>
-    );
-  }
-
+  // External iframe fallback
   return (
     <div className="absolute inset-0 bg-black">
       {Bg}
       {!iframeLoaded && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 pointer-events-none">
-          <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          <p className="text-white/60 text-xs">Loading video...</p>
+          <Loader2 className="w-10 h-10 text-white/60 animate-spin" />
+          <p className="text-white/60 text-xs">جاري التحميل...</p>
         </div>
       )}
       <iframe
@@ -315,7 +256,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
         className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
         allowFullScreen
         allow="autoplay; fullscreen; encrypted-media"
-        onLoad={handleIframeLoad}
+        onLoad={() => setIframeLoaded(true)}
       />
       <a
         href={url}
@@ -325,7 +266,7 @@ export default function VideoPlayer({ videoUrl: url, thumbnailColor, onDoubleTap
         className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-sm border border-white/20 text-white/70 text-xs hover:text-white hover:bg-black/60 transition-all z-10"
       >
         <ExternalLink className="w-3 h-3" />
-        Open
+        فتح
       </a>
     </div>
   );
