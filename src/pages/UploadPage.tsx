@@ -20,7 +20,7 @@ const COLORS = [
 ];
 
 export default function UploadPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { addVideo, addCategory, categories, settings } = useData();
   const { T } = useLang();
   const navigate = useNavigate();
@@ -113,7 +113,8 @@ export default function UploadPage() {
         category: finalCategory,
         videoUrl: fileDataUrl,
         thumbnailColor: selectedColor,
-        status: settings.approval_required === 'true' ? 'pending' : 'approved',
+        status: (isAdmin || settings.approval_required !== 'true') ? 'approved' : 'pending',
+        isAdmin,
       });
       setUploaded(true);
       setTimeout(() => navigate('/'), 2500);

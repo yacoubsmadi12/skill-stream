@@ -3,11 +3,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { useLang } from '@/contexts/LangContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus } from 'lucide-react';
+import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getBadge, getNextBadge, shareOnLinkedIn, BADGES, POINTS_RULES } from '@/lib/badges';
+import { playNotificationSound } from '@/lib/notificationSound';
 
 function Avatar({ avatar, name, size = 'md' }: { avatar?: string; name?: string; size?: 'sm' | 'md' | 'lg' }) {
   const sizeClass = size === 'lg' ? 'w-20 h-20 text-2xl' : size === 'sm' ? 'w-10 h-10 text-base' : 'w-16 h-16 text-xl';
@@ -26,6 +27,7 @@ function notifIcon(type: string) {
   if (type === 'save') return <Bookmark className="w-4 h-4 text-warning fill-warning" />;
   if (type === 'comment') return <MessageCircle className="w-4 h-4 text-blue-400" />;
   if (type === 'follow') return <UserPlus className="w-4 h-4 text-success" />;
+  if (type === 'admin_video') return <Shield className="w-4 h-4 text-primary" />;
   return <Bell className="w-4 h-4 text-muted-foreground" />;
 }
 
@@ -34,6 +36,7 @@ function notifText(type: string, actorName: string, videoTitle: string) {
   if (type === 'save') return `${actorName} saved your video "${videoTitle}"`;
   if (type === 'comment') return `${actorName} commented on "${videoTitle}"`;
   if (type === 'follow') return `${actorName} started following you`;
+  if (type === 'admin_video') return `📢 فيديو جديد من فريق الإدارة يستحق المشاهدة: "${videoTitle}"`;
   return `${actorName} interacted with your content`;
 }
 
@@ -57,8 +60,17 @@ export default function ProfilePage() {
   const [showPoints, setShowPoints] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showFollowers, setShowFollowers] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const prevUnreadRef = useRef(0);
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      playNotificationSound();
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   const [editName, setEditName] = useState('');
   const [editDept, setEditDept] = useState('');
@@ -194,17 +206,24 @@ export default function ProfilePage() {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-4">
-              {[
-                { label: T.profile.videos, value: userVideos.length, icon: Video },
-                { label: T.profile.followers, value: profile?.followers || 0, icon: Users },
-                { label: T.profile.experience, value: `${profile?.years_experience || 0}${T.profile.yr}`, icon: Calendar },
-              ].map(s => (
-                <div key={s.label} className="text-center p-3 bg-secondary/30 rounded-xl">
-                  <s.icon className="w-4 h-4 text-primary mx-auto mb-1" />
-                  <p className="text-foreground font-bold text-lg">{s.value}</p>
-                  <p className="text-muted-foreground text-xs">{s.label}</p>
-                </div>
-              ))}
+              <div className="text-center p-3 bg-secondary/30 rounded-xl">
+                <Video className="w-4 h-4 text-primary mx-auto mb-1" />
+                <p className="text-foreground font-bold text-lg">{userVideos.length}</p>
+                <p className="text-muted-foreground text-xs">{T.profile.videos}</p>
+              </div>
+              <button
+                onClick={() => { loadFollowers(user!.id); setShowFollowers(true); }}
+                className="text-center p-3 bg-secondary/30 rounded-xl hover:bg-primary/10 hover:border hover:border-primary/20 transition-all cursor-pointer"
+              >
+                <Users className="w-4 h-4 text-primary mx-auto mb-1" />
+                <p className="text-foreground font-bold text-lg">{profile?.followers || 0}</p>
+                <p className="text-muted-foreground text-xs">{T.profile.followers}</p>
+              </button>
+              <div className="text-center p-3 bg-secondary/30 rounded-xl">
+                <Calendar className="w-4 h-4 text-primary mx-auto mb-1" />
+                <p className="text-foreground font-bold text-lg">{profile?.years_experience || 0}{T.profile.yr}</p>
+                <p className="text-muted-foreground text-xs">{T.profile.experience}</p>
+              </div>
             </div>
 
             {/* Skills */}
@@ -545,6 +564,69 @@ export default function ProfilePage() {
                         <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
                       )}
                     </button>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Followers Modal */}
+      <AnimatePresence>
+        {showFollowers && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center"
+            onClick={e => { if (e.target === e.currentTarget) setShowFollowers(false); }}
+          >
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 80, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-card w-full md:max-w-md rounded-t-3xl md:rounded-2xl border border-border/50 shadow-2xl max-h-[80vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-border/30 shrink-0">
+                <div>
+                  <h2 className="text-lg font-display font-bold text-foreground flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    {T.profile.followers}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">{profile?.followers || 0} followers</p>
+                </div>
+                <button onClick={() => setShowFollowers(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 p-3 space-y-2">
+                {followersList.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">No followers yet</p>
+                    <p className="text-muted-foreground/60 text-xs mt-1">When someone follows you, they'll appear here</p>
+                  </div>
+                ) : (
+                  followersList.map(f => (
+                    <div key={f.user_id} className="flex items-center gap-3 rounded-xl px-4 py-3 bg-secondary/20">
+                      <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 overflow-hidden">
+                        {f.avatar
+                          ? <img src={f.avatar} alt={f.name} className="w-full h-full object-cover" />
+                          : f.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">{f.name}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Briefcase className="w-3 h-3" /> {f.department}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                        <Star className="w-3 h-3 text-warning fill-warning" />
+                        {f.rating}
+                      </div>
+                    </div>
                   ))
                 )}
               </div>

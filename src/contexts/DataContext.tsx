@@ -132,7 +132,7 @@ interface DataContextType {
   rateRequest: (reqId: string, rating: number, feedback: string) => void;
   updateVideoStatus: (videoId: string, status: string) => void;
   deleteVideo: (videoId: string) => void;
-  addVideo: (video: { userId: string; userName: string; userAvatar: string; userDepartment: string; title: string; description: string; tags: string[]; category: string; videoUrl: string; thumbnailColor: string; status: string }) => void;
+  addVideo: (video: { userId: string; userName: string; userAvatar: string; userDepartment: string; title: string; description: string; tags: string[]; category: string; videoUrl: string; thumbnailColor: string; status: string; isAdmin?: boolean }) => void;
   addCategory: (name: string, icon: string) => void;
   deleteCategory: (id: string) => void;
   incrementView: (videoId: string) => void;
@@ -354,7 +354,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setVideos(prev => prev.filter(v => v.id !== videoId));
   };
 
-  const addVideo = async (video: { userId: string; userName: string; userAvatar: string; userDepartment: string; title: string; description: string; tags: string[]; category: string; videoUrl: string; thumbnailColor: string; status: string }) => {
+  const addVideo = async (video: { userId: string; userName: string; userAvatar: string; userDepartment: string; title: string; description: string; tags: string[]; category: string; videoUrl: string; thumbnailColor: string; status: string; isAdmin?: boolean }) => {
     const data = await apiFetch('/api/videos', {
       method: 'POST',
       body: JSON.stringify(video),

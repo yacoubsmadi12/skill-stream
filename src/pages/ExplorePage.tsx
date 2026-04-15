@@ -174,30 +174,56 @@ export default function ExplorePage() {
                   <Users className="w-4 h-4" /> {T.explore.people}
                   <span className="text-xs bg-secondary px-2 py-0.5 rounded-full">{filteredProfiles.length}</span>
                 </h2>
-                <div className="space-y-2 mb-6">
-                  {filteredProfiles.map(p => (
-                    <motion.button
-                      key={p.user_id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      onClick={() => setSelectedProfile(p as UserProfile)}
-                      className="w-full bg-card rounded-xl border border-border/50 p-3 flex items-center gap-3 hover:border-primary/30 transition-colors text-left group"
-                    >
-                      <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 overflow-hidden">
-                        {p.avatar
-                          ? <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full object-cover" />
-                          : p.name.charAt(0)}
+                <div className="space-y-4 mb-6">
+                  {(() => {
+                    const grouped: Record<string, typeof filteredProfiles> = {};
+                    filteredProfiles.forEach(p => {
+                      const dept = p.department || 'Other';
+                      if (!grouped[dept]) grouped[dept] = [];
+                      grouped[dept].push(p);
+                    });
+                    return Object.entries(grouped).map(([dept, people], gi) => (
+                      <div key={dept}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-base">{getCategoryIcon(dept)}</span>
+                          <span className="text-xs font-bold text-primary uppercase tracking-wide">{dept}</span>
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{people.length}</span>
+                          <div className="flex-1 h-px bg-border/40" />
+                        </div>
+                        <div className="space-y-2">
+                          {people.map((p, i) => (
+                            <motion.button
+                              key={p.user_id}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: (gi * 3 + i) * 0.04 }}
+                              onClick={() => setSelectedProfile(p as UserProfile)}
+                              className="w-full bg-card rounded-xl border border-border/50 p-3 flex items-center gap-3 hover:border-primary/30 transition-colors text-left group"
+                            >
+                              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold shrink-0 overflow-hidden">
+                                {p.avatar
+                                  ? <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full object-cover" />
+                                  : p.name.charAt(0)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{p.name}</p>
+                                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                  <span className="text-xs text-muted-foreground">{p.department}</span>
+                                  {p.skills.slice(0, 2).map(s => (
+                                    <span key={s} className="text-xs bg-secondary text-muted-foreground px-1.5 py-0.5 rounded-full">{s}</span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                                <Star className="w-3 h-3 text-warning fill-warning" />
+                                {p.rating}
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.department}</p>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                        <Star className="w-3 h-3 text-warning fill-warning" />
-                        {p.rating}
-                      </div>
-                    </motion.button>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </>
             )}

@@ -83,6 +83,8 @@ app.get('/api/videos', async (_req, res) => {
 app.post('/api/videos', async (req, res) => {
   try {
     const v = req.body;
+    const isAdmin = v.isAdmin === true;
+    const finalStatus = isAdmin ? 'approved' : v.status;
     const [row] = await db.insert(videos).values({
       user_id: v.userId,
       user_name: v.userName,
@@ -94,9 +96,17 @@ app.post('/api/videos', async (req, res) => {
       category: v.category,
       video_url: v.videoUrl,
       thumbnail_color: v.thumbnailColor,
-      status: v.status,
+      status: finalStatus,
     }).returning();
     await db.update(profiles).set({ videos_count: sql`videos_count + 1` }).where(eq(profiles.user_id, v.userId));
+    if (isAdmin) {
+      const allProfiles = await db.select().from(profiles);
+      for (const p of allProfiles) {
+        if (p.user_id !== v.userId) {
+          await createNotification(p.user_id, v.userName, v.userAvatar || '', 'admin_video', v.title, row.id);
+        }
+      }
+    }
     res.json({ ...row, comments: [] });
   } catch (e) {
     res.status(500).json({ error: String(e) });
