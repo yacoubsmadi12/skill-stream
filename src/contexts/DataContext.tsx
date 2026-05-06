@@ -215,8 +215,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    apiFetch(`/api/follows?userId=${currentUser.id}`)
+    const uid = currentUser.id;
+    apiFetch(`/api/follows?userId=${uid}`)
       .then((ids: string[]) => setFollowedUsers(new Set(ids)))
+      .catch(() => {});
+    apiFetch(`/api/user-likes/${uid}`)
+      .then((ids: string[]) => setLikedVideos(new Set(ids)))
+      .catch(() => {});
+    apiFetch(`/api/user-saves/${uid}`)
+      .then((ids: string[]) => setSavedVideos(new Set(ids)))
       .catch(() => {});
   }, [currentUser?.id]);
 

@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db.js';
-import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications, video_likes, video_saves, video_views } from './schema.js';
+import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications, video_likes, video_saves, video_views, app_settings } from './schema.js';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
 import { seedIfEmpty, fillVideoUrls } from './seed.js';
 
@@ -35,15 +35,48 @@ app.post('/api/upload-video', upload.single('video'), (req, res) => {
   return res.json({ url });
 });
 
-// ── In-memory settings ─────────────────────────────────────────
-const settings: Record<string, string> = {
-  approval_required: 'true', // 'true' = videos need approval, 'false' = auto-publish
+// ── DB-backed settings ─────────────────────────────────────────
+const DEFAULT_SETTINGS: Record<string, string> = {
+  approval_required: 'true',
 };
 
-app.get('/api/settings', (_req, res) => res.json(settings));
-app.patch('/api/settings', (req, res) => {
-  Object.assign(settings, req.body);
-  res.json(settings);
+async function loadSettings(): Promise<Record<string, string>> {
+  const rows = await db.select().from(app_settings);
+  const result = { ...DEFAULT_SETTINGS };
+  for (const row of rows) result[row.key] = row.value;
+  return result;
+}
+
+app.get('/api/settings', async (_req, res) => {
+  try { res.json(await loadSettings()); }
+  catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+app.patch('/api/settings', async (req, res) => {
+  try {
+    for (const [key, value] of Object.entries(req.body as Record<string, string>)) {
+      await db.insert(app_settings).values({ key, value })
+        .onConflictDoUpdate({ target: app_settings.key, set: { value } });
+    }
+    res.json(await loadSettings());
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── User engagement state ──────────────────────────────────────
+app.get('/api/user-likes/:userId', async (req, res) => {
+  try {
+    const rows = await db.select({ video_id: video_likes.video_id })
+      .from(video_likes).where(eq(video_likes.user_id, req.params.userId));
+    res.json(rows.map(r => r.video_id));
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+app.get('/api/user-saves/:userId', async (req, res) => {
+  try {
+    const rows = await db.select({ video_id: video_saves.video_id })
+      .from(video_saves).where(eq(video_saves.user_id, req.params.userId));
+    res.json(rows.map(r => r.video_id));
+  } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
 // ── Points helper ──────────────────────────────────────────────

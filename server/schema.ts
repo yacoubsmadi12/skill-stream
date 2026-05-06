@@ -112,6 +112,11 @@ export const request_messages = pgTable('request_messages', {
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const app_settings = pgTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+});
+
 export const video_likes = pgTable('video_likes', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   video_id: text('video_id').notNull(),
