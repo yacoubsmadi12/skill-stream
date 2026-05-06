@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useData } from '@/contexts/DataContext';
+import { useData, Video as VideoType } from '@/contexts/DataContext';
 import { useLang } from '@/contexts/LangContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus, Shield } from 'lucide-react';
+import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus, Shield, Play, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +61,7 @@ export default function ProfilePage() {
   const [showBadges, setShowBadges] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<VideoType | null>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -345,21 +346,47 @@ export default function ProfilePage() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {userVideos.map(v => (
-                <div key={v.id} className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end relative group`}>
+                <div
+                  key={v.id}
+                  className={`aspect-[9/16] rounded-xl bg-gradient-to-br ${v.thumbnail_color} p-3 flex flex-col justify-end relative group cursor-pointer`}
+                  onClick={() => setPlayingVideo(v)}
+                >
+                  {/* Video preview thumbnail */}
+                  {v.video_url && (v.video_url.startsWith('/uploads/') || v.video_url.startsWith('blob:') || v.video_url.startsWith('data:video/')) && (
+                    <video
+                      src={v.video_url}
+                      className="absolute inset-0 w-full h-full object-cover rounded-xl opacity-60"
+                      preload="metadata"
+                      muted
+                      playsInline
+                      onLoadedMetadata={e => { (e.target as HTMLVideoElement).currentTime = 0.5; }}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/30 rounded-xl" />
+                  {/* Play button */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-sm border-2 border-white/70 flex items-center justify-center">
+                      <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                    </div>
+                  </div>
+                  {/* Delete button */}
                   <button
-                    onClick={() => deleteVideo(v.id)}
-                    className="absolute top-2 right-2 w-7 h-7 bg-black/50 hover:bg-destructive rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={e => { e.stopPropagation(); deleteVideo(v.id); }}
+                    className="absolute top-2 right-2 w-7 h-7 bg-black/50 hover:bg-destructive rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-white" />
                   </button>
-                  <p className="text-xs font-semibold text-foreground line-clamp-2">{v.title}</p>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-foreground/70">
-                    <span>❤️ {v.likes}</span>
-                    <span>👁️ {v.views}</span>
+                  {/* Info */}
+                  <div className="relative z-10">
+                    <p className="text-xs font-semibold text-white line-clamp-2">{v.title}</p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-white/80">
+                      <span>❤️ {v.likes}</span>
+                      <span>👁️ {v.views}</span>
+                    </div>
+                    <span className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block w-fit ${statusColor(v.status)}`}>
+                      {v.status === 'approved' ? T.common.approved : v.status === 'pending' ? T.common.pending : T.common.rejected}
+                    </span>
                   </div>
-                  <span className={`text-xs mt-1 px-2 py-0.5 rounded-full inline-block w-fit ${statusColor(v.status)}`}>
-                    {v.status === 'approved' ? T.common.approved : v.status === 'pending' ? T.common.pending : T.common.rejected}
-                  </span>
                 </div>
               ))}
             </div>
@@ -368,6 +395,86 @@ export default function ProfilePage() {
       </div>
 
       {/* Points History Modal */}
+      {/* ── Video Player Modal ── */}
+      <AnimatePresence>
+        {playingVideo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/90 flex flex-col"
+            onClick={e => { if (e.target === e.currentTarget) setPlayingVideo(null); }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 z-10">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-semibold text-base line-clamp-1">{playingVideo.title}</h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(playingVideo.status)}`}>
+                    {playingVideo.status === 'approved' ? T.common.approved : playingVideo.status === 'pending' ? T.common.pending : T.common.rejected}
+                  </span>
+                  {playingVideo.status === 'pending' && (
+                    <span className="text-white/50 text-xs flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> في انتظار موافقة الأدمن
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setPlayingVideo(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center ml-3 shrink-0"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Player */}
+            <div className="flex-1 flex items-center justify-center px-4 pb-4">
+              {playingVideo.video_url && (
+                playingVideo.video_url.startsWith('/uploads/') ||
+                playingVideo.video_url.startsWith('data:video/') ||
+                playingVideo.video_url.match(/\.(mp4|webm|ogg|mov|avi)(\?|$)/i)
+              ) ? (
+                <video
+                  src={playingVideo.video_url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="max-h-full max-w-full rounded-xl object-contain"
+                  style={{ maxHeight: 'calc(100vh - 120px)' }}
+                />
+              ) : playingVideo.video_url && playingVideo.video_url.match(/(?:youtube\.com|youtu\.be)/) ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${
+                    playingVideo.video_url.match(/[?&]v=([a-zA-Z0-9_-]+)/)?.[1] ||
+                    playingVideo.video_url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)?.[1] || ''
+                  }?autoplay=1&rel=0`}
+                  className="w-full rounded-xl"
+                  style={{ aspectRatio: '16/9', maxHeight: 'calc(100vh - 120px)' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                  allowFullScreen
+                />
+              ) : (
+                <div className={`w-full rounded-xl bg-gradient-to-br ${playingVideo.thumbnail_color} flex flex-col items-center justify-center gap-4`} style={{ aspectRatio: '9/16', maxHeight: 'calc(100vh - 120px)' }}>
+                  <Play className="w-16 h-16 text-white/40" />
+                  <p className="text-white/60 text-sm">لا يوجد ملف فيديو مرفق</p>
+                </div>
+              )}
+            </div>
+
+            {/* Meta */}
+            <div className="px-4 pb-6 flex items-center gap-4 text-white/60 text-sm">
+              <span>❤️ {playingVideo.likes}</span>
+              <span>👁️ {playingVideo.views}</span>
+              <span>🔖 {playingVideo.saves}</span>
+              {playingVideo.description && (
+                <span className="flex-1 line-clamp-1 text-white/50 text-xs">{playingVideo.description}</span>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showPoints && (
           <motion.div
