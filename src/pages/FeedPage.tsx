@@ -49,11 +49,101 @@ function getVimeoEmbedUrl(url: string): string {
   return `https://player.vimeo.com/video/${id}?autoplay=1&playsinline=1`;
 }
 
+// ── Native video player (Reels-style) ─────────────────────────
+function NativeVideoPlayer({ url, onDoubleTap, isActive }: {
+  url: string;
+  onDoubleTap: () => void;
+  isActive: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [showPauseIcon, setShowPauseIcon] = useState(false);
+  const [error, setError] = useState(false);
+  const iconTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-play when this card becomes active, pause when it leaves
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (isActive) {
+      vid.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      vid.pause();
+      vid.currentTime = 0;
+      setPlaying(false);
+    }
+  }, [isActive]);
+
+  const flashIcon = () => {
+    setShowPauseIcon(true);
+    if (iconTimeout.current) clearTimeout(iconTimeout.current);
+    iconTimeout.current = setTimeout(() => setShowPauseIcon(false), 700);
+  };
+
+  const handleTap = () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (vid.paused) {
+      vid.play().then(() => setPlaying(true)).catch(() => {});
+      flashIcon();
+    } else {
+      vid.pause();
+      setPlaying(false);
+      flashIcon();
+    }
+    onDoubleTap();
+  };
+
+  if (error) {
+    return (
+      <div className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-3">
+        <Play className="w-10 h-10 text-white/30" />
+        <p className="text-white/60 text-sm">تعذّر تشغيل الفيديو</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 bg-black" onClick={handleTap}>
+      <video
+        ref={videoRef}
+        src={url}
+        playsInline
+        loop
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-contain"
+        onError={() => setError(true)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+      />
+      <AnimatePresence>
+        {showPauseIcon && (
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 1.3, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+          >
+            <div className="w-20 h-20 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+              {playing
+                ? <Play className="w-9 h-9 text-white fill-white ml-1" />
+                : <div className="flex gap-1.5"><span className="w-3 h-8 bg-white rounded-sm" /><span className="w-3 h-8 bg-white rounded-sm" /></div>
+              }
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ── Smart video player ─────────────────────────────────────────
-function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
+function VideoPlayer({ url, thumbnailColor, onDoubleTap, isActive }: {
   url: string;
   thumbnailColor: string;
   onDoubleTap: () => void;
+  isActive: boolean;
 }) {
   const [playing, setPlaying] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -229,24 +319,7 @@ function VideoPlayer({ url, thumbnailColor, onDoubleTap }: {
   }
 
   if (type === 'video') {
-    return (
-      <div className="absolute inset-0 bg-black">
-        <video
-          src={url}
-          autoPlay
-          controls
-          playsInline
-          className="absolute inset-0 w-full h-full object-contain"
-          onError={() => setVideoError(true)}
-        />
-        {videoError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70">
-            <Play className="w-10 h-10 text-white/30" />
-            <p className="text-white/60 text-sm">تعذّر تشغيل الفيديو</p>
-          </div>
-        )}
-      </div>
-    );
+    return <NativeVideoPlayer url={url} onDoubleTap={onDoubleTap} isActive={isActive} />;
   }
 
   // External URL: try native <video> first, then show open-in-tab button
@@ -455,6 +528,7 @@ function VideoCard({
         url={video.video_url}
         thumbnailColor={video.thumbnail_color}
         onDoubleTap={handleDoubleTap}
+        isActive={isActive}
       />
 
       {/* Double tap heart */}

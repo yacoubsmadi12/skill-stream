@@ -28,7 +28,7 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [fileDataUrl, setFileDataUrl] = useState<string>('');
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,19 +48,11 @@ export default function UploadPage() {
       setError(T.upload.errorType);
       return;
     }
-    const maxBytes = 40 * 1024 * 1024;
-    if (file.size > maxBytes) {
-      setError('حجم الفيديو يتجاوز 40MB. يرجى رفع فيديو أصغر.');
-      return;
-    }
     setError('');
     setSelectedFile(file);
     const blobUrl = URL.createObjectURL(file);
     setPreviewUrl(blobUrl);
     if (!title) setTitle(file.name.replace(/\.[^/.]+$/, ''));
-    const reader = new FileReader();
-    reader.onloadend = () => setFileDataUrl(reader.result as string);
-    reader.readAsDataURL(file);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -82,17 +74,40 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (!user || !title.trim() || !selectedFile) return;
-    if (!fileDataUrl) {
-      setError('الفيديو لا يزال يُعالج، انتظر لحظة وحاول مجدداً.');
-      return;
-    }
     if (category === 'other' && !customCategory.trim()) {
       setError('يرجى إدخال اسم التصنيف الجديد.');
       return;
     }
     setUploading(true);
     setError('');
+    setUploadProgress(0);
+
     try {
+      // 1. Upload the file to the server
+      const formData = new FormData();
+      formData.append('video', selectedFile);
+
+      const xhr = new XMLHttpRequest();
+      const videoUrl = await new Promise<string>((resolve, reject) => {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data.url);
+          } else {
+            reject(new Error('فشل رفع الملف'));
+          }
+        };
+        xhr.onerror = () => reject(new Error('خطأ في الشبكة'));
+        xhr.open('POST', '/api/upload-video');
+        xhr.send(formData);
+      });
+
+      // 2. Create video record in DB
       let finalCategory = category || 'Uncategorized';
       if (category === 'other' && customCategory.trim()) {
         const trimmed = customCategory.trim();
@@ -102,6 +117,7 @@ export default function UploadPage() {
         }
         finalCategory = trimmed;
       }
+
       await addVideo({
         userId: user.id,
         userName: user.name,
@@ -111,16 +127,18 @@ export default function UploadPage() {
         description: description.trim(),
         tags,
         category: finalCategory,
-        videoUrl: fileDataUrl,
+        videoUrl,
         thumbnailColor: selectedColor,
         status: (isAdmin || settings.approval_required !== 'true') ? 'approved' : 'pending',
         isAdmin,
       });
+
       setUploaded(true);
       setTimeout(() => navigate('/'), 2500);
     } catch (err) {
-      setError(T.upload.errorGeneral);
+      setError(String(err) || T.upload.errorGeneral);
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -153,7 +171,7 @@ export default function UploadPage() {
           >
             <Upload className="w-12 h-12 text-muted-foreground group-hover:text-primary mx-auto mb-3 transition-colors" />
             <p className="text-foreground font-medium mb-1">{T.upload.dropzone}</p>
-            <p className="text-muted-foreground text-sm">{T.upload.dropzoneHint}</p>
+            <p className="text-muted-foreground text-sm">أي صيغة فيديو — بدون حد للحجم</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -167,7 +185,7 @@ export default function UploadPage() {
           <div className="relative mb-5 rounded-2xl overflow-hidden bg-black">
             <video src={previewUrl} controls className="w-full max-h-64 object-contain" />
             <button
-              onClick={() => { setSelectedFile(null); setPreviewUrl(''); setFileDataUrl(''); }}
+              onClick={() => { setSelectedFile(null); setPreviewUrl(''); setUploadProgress(0); }}
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
               data-testid="button-remove-video"
             >
@@ -178,6 +196,24 @@ export default function UploadPage() {
               {selectedFile?.name}
             </div>
           </div>
+        )}
+
+        {/* Upload progress bar */}
+        {uploading && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+              <span>جاري رفع الفيديو...</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <div className="w-full bg-secondary/50 rounded-full h-2">
+              <motion.div
+                className="gradient-primary h-2 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${uploadProgress}%` }}
+                transition={{ ease: 'linear' }}
+              />
+            </div>
+          </motion.div>
         )}
 
         {error && (
@@ -305,7 +341,8 @@ export default function UploadPage() {
           >
             {uploading ? (
               <span className="flex items-center gap-2">
-                <Video className="w-5 h-5 animate-pulse" /> {T.upload.uploading}
+                <Video className="w-5 h-5 animate-pulse" />
+                {uploadProgress < 100 ? `جاري الرفع... ${uploadProgress}%` : 'جاري الحفظ...'}
               </span>
             ) : (
               <span className="flex items-center gap-2">

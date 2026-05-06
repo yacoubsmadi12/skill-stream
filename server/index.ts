@@ -1,13 +1,39 @@
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from './db.js';
 import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications } from './schema.js';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
 import { seedIfEmpty, fillVideoUrls } from './seed.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '60mb' }));
+app.use(express.json({ limit: '10mb' }));
+
+// ── Serve uploaded videos as static files ──────────────────────
+const uploadsDir = path.join(__dirname, '../public/uploads');
+app.use('/uploads', express.static(uploadsDir));
+
+// ── Multer — disk storage, no size limit ──────────────────────
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname) || '.mp4';
+    cb(null, `${unique}${ext}`);
+  },
+});
+const upload = multer({ storage });
+
+app.post('/api/upload-video', upload.single('video'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file received' });
+  const url = `/uploads/${req.file.filename}`;
+  return res.json({ url });
+});
 
 // ── In-memory settings ─────────────────────────────────────────
 const settings: Record<string, string> = {
