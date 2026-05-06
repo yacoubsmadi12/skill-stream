@@ -770,11 +770,19 @@ export default function ProfilePage() {
                     <p className="text-muted-foreground/60 text-xs mt-1">When someone likes, saves, comments, or follows you — it'll appear here</p>
                   </div>
                 ) : (
-                  notifications.map(n => (
+                  notifications.map(n => {
+                    const linkedVideo = n.video_id ? videos.find(v => v.id === n.video_id) : null;
+                    return (
                     <button
                       key={n.id}
-                      onClick={() => !n.read && markNotificationRead(n.id)}
-                      className={`w-full flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors ${n.read ? 'bg-secondary/20' : 'bg-primary/5 border border-primary/10'}`}
+                      onClick={() => {
+                        if (!n.read) markNotificationRead(n.id);
+                        if (linkedVideo) {
+                          setShowNotifications(false);
+                          setPlayingVideo(linkedVideo);
+                        }
+                      }}
+                      className={`w-full flex items-start gap-3 rounded-xl px-4 py-3 text-left transition-colors ${n.read ? 'bg-secondary/20 hover:bg-secondary/30' : 'bg-primary/5 border border-primary/10 hover:bg-primary/10'} ${linkedVideo ? 'cursor-pointer' : 'cursor-default'}`}
                     >
                       <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
                         {n.actor_avatar
@@ -788,12 +796,19 @@ export default function ProfilePage() {
                           <p className="text-sm text-foreground line-clamp-2">{notifText(n.type, n.actor_name, n.video_title)}</p>
                         </div>
                         <p className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                        {linkedVideo && (
+                          <p className="text-xs text-primary/70 mt-0.5 flex items-center gap-1">
+                            <Play className="w-3 h-3" />
+                            انقر لمشاهدة الفيديو
+                          </p>
+                        )}
                       </div>
                       {!n.read && (
                         <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
                       )}
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </motion.div>
