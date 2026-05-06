@@ -145,6 +145,9 @@ interface DataContextType {
   updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
   followersList: UserProfile[];
   loadFollowers: (userId: string) => Promise<void>;
+  fetchVideoLikers: (videoId: string) => Promise<{ user_id: string; user_name: string; user_avatar: string; created_at: string }[]>;
+  fetchVideoSavers: (videoId: string) => Promise<{ user_id: string; user_name: string; user_avatar: string; created_at: string }[]>;
+  fetchVideoViewers: (videoId: string) => Promise<{ user_id: string; user_name: string; created_at: string }[]>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -376,8 +379,23 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const incrementView = (videoId: string) => {
-    apiFetch(`/api/videos/${videoId}/view`, { method: 'POST' }).catch(console.error);
+    apiFetch(`/api/videos/${videoId}/view`, {
+      method: 'POST',
+      body: JSON.stringify({ userId: currentUser?.id, userName: currentUser?.name }),
+    }).catch(console.error);
     setVideos(prev => prev.map(v => v.id === videoId ? { ...v, views: v.views + 1 } : v));
+  };
+
+  const fetchVideoLikers = async (videoId: string) => {
+    return apiFetch(`/api/videos/${videoId}/likes`);
+  };
+
+  const fetchVideoSavers = async (videoId: string) => {
+    return apiFetch(`/api/videos/${videoId}/saves`);
+  };
+
+  const fetchVideoViewers = async (videoId: string) => {
+    return apiFetch(`/api/videos/${videoId}/views`);
   };
 
   const updateProfile = async (userId: string, updates: { name?: string; department?: string; bio?: string; skills?: string[]; years_experience?: number; avatar?: string }) => {
@@ -429,6 +447,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       updateSettings,
       followersList,
       loadFollowers,
+      fetchVideoLikers,
+      fetchVideoSavers,
+      fetchVideoViewers,
     }}>
       {children}
     </DataContext.Provider>

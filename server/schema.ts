@@ -111,3 +111,29 @@ export const request_messages = pgTable('request_messages', {
   text: text('text').notNull(),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const video_likes = pgTable('video_likes', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  video_id: text('video_id').notNull(),
+  user_id: text('user_id').notNull(),
+  user_name: text('user_name').notNull(),
+  user_avatar: text('user_avatar').notNull().default(''),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const video_saves = pgTable('video_saves', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  video_id: text('video_id').notNull(),
+  user_id: text('user_id').notNull(),
+  user_name: text('user_name').notNull(),
+  user_avatar: text('user_avatar').notNull().default(''),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const video_views = pgTable('video_views', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  video_id: text('video_id').notNull(),
+  user_id: text('user_id').notNull(),
+  user_name: text('user_name').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db.js';
-import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications } from './schema.js';
+import { categories, comments, profiles, request_messages, service_requests, videos, user_follows, points_history, notifications, video_likes, video_saves, video_views } from './schema.js';
 import { eq, desc, asc, sql, and } from 'drizzle-orm';
 import { seedIfEmpty, fillVideoUrls } from './seed.js';
 
@@ -155,11 +155,14 @@ app.patch('/api/videos/:id', async (req, res) => {
 
 app.post('/api/videos/:id/view', async (req, res) => {
   try {
+    const { userId, userName } = req.body || {};
     const [row] = await db.update(videos)
       .set({ views: sql`views + 1` })
       .where(eq(videos.id, req.params.id))
       .returning();
-    // Award points every 100 views
+    if (userId) {
+      await db.insert(video_views).values({ video_id: req.params.id, user_id: userId, user_name: userName || 'Unknown' }).onConflictDoNothing();
+    }
     if (row.views % 100 === 0) {
       await awardPoints(row.user_id, 'views_milestone', 10, `Your video "${row.title}" reached ${row.views} views`);
     }
@@ -177,14 +180,40 @@ app.post('/api/videos/:id/like', async (req, res) => {
       .set({ likes: sql`likes + ${delta}` })
       .where(eq(videos.id, req.params.id))
       .returning();
-    if (liked && row.user_id !== userId) {
-      await awardPoints(row.user_id, 'video_liked', 5, `Someone liked your video: ${row.title}`);
-      await createNotification(row.user_id, actorName || 'Someone', actorAvatar || '', 'like', row.title, row.id);
+    if (liked) {
+      await db.insert(video_likes).values({ video_id: req.params.id, user_id: userId || '', user_name: actorName || 'Someone', user_avatar: actorAvatar || '' }).onConflictDoNothing();
+      if (row.user_id !== userId) {
+        await awardPoints(row.user_id, 'video_liked', 5, `Someone liked your video: ${row.title}`);
+        await createNotification(row.user_id, actorName || 'Someone', actorAvatar || '', 'like', row.title, row.id);
+      }
+    } else {
+      await db.delete(video_likes).where(and(eq(video_likes.video_id, req.params.id), eq(video_likes.user_id, userId || '')));
     }
     res.json(row);
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
+});
+
+app.get('/api/videos/:id/likes', async (req, res) => {
+  try {
+    const rows = await db.select().from(video_likes).where(eq(video_likes.video_id, req.params.id)).orderBy(desc(video_likes.created_at));
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+app.get('/api/videos/:id/saves', async (req, res) => {
+  try {
+    const rows = await db.select().from(video_saves).where(eq(video_saves.video_id, req.params.id)).orderBy(desc(video_saves.created_at));
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+app.get('/api/videos/:id/views', async (req, res) => {
+  try {
+    const rows = await db.select().from(video_views).where(eq(video_views.video_id, req.params.id)).orderBy(desc(video_views.created_at));
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
 app.delete('/api/videos/:id', async (req, res) => {
@@ -413,10 +442,15 @@ app.post('/api/requests/:id/messages', async (req, res) => {
 // ── Video Save ────────────────────────────────────────────────
 app.post('/api/videos/:id/save', async (req, res) => {
   try {
-    const { actorName, actorAvatar, saved } = req.body;
+    const { actorName, actorAvatar, actorId, saved } = req.body;
     const [vid] = await db.select().from(videos).where(eq(videos.id, req.params.id));
-    if (vid && saved && vid.user_id !== req.body.actorId) {
-      await createNotification(vid.user_id, actorName, actorAvatar || '', 'save', vid.title, vid.id);
+    if (saved) {
+      await db.insert(video_saves).values({ video_id: req.params.id, user_id: actorId || '', user_name: actorName || 'Someone', user_avatar: actorAvatar || '' }).onConflictDoNothing();
+      if (vid && vid.user_id !== actorId) {
+        await createNotification(vid.user_id, actorName, actorAvatar || '', 'save', vid.title, vid.id);
+      }
+    } else {
+      await db.delete(video_saves).where(and(eq(video_saves.video_id, req.params.id), eq(video_saves.user_id, actorId || '')));
     }
     const delta = saved ? 1 : -1;
     const [row] = await db.update(videos)

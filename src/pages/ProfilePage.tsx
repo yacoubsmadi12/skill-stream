@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useData, Video as VideoType } from '@/contexts/DataContext';
 import { useLang } from '@/contexts/LangContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus, Shield, Play, Clock } from 'lucide-react';
+import { Star, Video, Users, Award, Briefcase, Calendar, Pencil, X, Camera, Plus, Check, Trash2, Trophy, TrendingUp, Share2, Zap, Bell, Heart, Bookmark, MessageCircle, UserPlus, Shield, Play, Clock, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +42,7 @@ function notifText(type: string, actorName: string, videoTitle: string) {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const { profiles, videos, updateProfile, deleteVideo, pointsHistory, loadPointsHistory, notifications, loadNotifications, markNotificationRead, markAllNotificationsRead, followersList, loadFollowers } = useData();
+  const { profiles, videos, updateProfile, deleteVideo, pointsHistory, loadPointsHistory, notifications, loadNotifications, markNotificationRead, markAllNotificationsRead, followersList, loadFollowers, toggleLike, likedVideos, fetchVideoLikers, fetchVideoSavers, fetchVideoViewers } = useData();
   const { T } = useLang();
   const { toast } = useToast();
 
@@ -62,6 +62,23 @@ export default function ProfilePage() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
   const [playingVideo, setPlayingVideo] = useState<VideoType | null>(null);
+
+  type EngagementUser = { user_id: string; user_name: string; user_avatar?: string; created_at: string };
+  const [engagementModal, setEngagementModal] = useState<{ type: 'likes' | 'saves' | 'views'; list: EngagementUser[] } | null>(null);
+  const [engagementLoading, setEngagementLoading] = useState(false);
+
+  const openEngagement = async (type: 'likes' | 'saves' | 'views', videoId: string) => {
+    setEngagementLoading(true);
+    try {
+      const list = type === 'likes'
+        ? await fetchVideoLikers(videoId)
+        : type === 'saves'
+        ? await fetchVideoSavers(videoId)
+        : await fetchVideoViewers(videoId);
+      setEngagementModal({ type, list });
+    } catch { /* ignore */ }
+    finally { setEngagementLoading(false); }
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -462,15 +479,120 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Meta */}
-            <div className="px-4 pb-6 flex items-center gap-4 text-white/60 text-sm">
-              <span>❤️ {playingVideo.likes}</span>
-              <span>👁️ {playingVideo.views}</span>
-              <span>🔖 {playingVideo.saves}</span>
+            {/* Meta + Like button */}
+            <div className="px-4 pb-6 flex items-center gap-3">
+              {/* Like button */}
+              <button
+                onClick={() => {
+                  toggleLike(playingVideo.id);
+                  setPlayingVideo(prev => prev ? {
+                    ...prev,
+                    likes: likedVideos.has(playingVideo.id) ? prev.likes - 1 : prev.likes + 1,
+                  } : prev);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${likedVideos.has(playingVideo.id) ? 'bg-red-500 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+              >
+                <Heart className={`w-4 h-4 ${likedVideos.has(playingVideo.id) ? 'fill-white' : ''}`} />
+                <span>{playingVideo.likes}</span>
+              </button>
+
+              {/* Clickable stats */}
+              <button
+                onClick={() => openEngagement('likes', playingVideo.id)}
+                disabled={engagementLoading}
+                className="flex items-center gap-1 text-white/60 hover:text-white/90 text-sm transition-colors"
+                title="من أعجب"
+              >
+                <Users className="w-4 h-4" />
+                <span>{playingVideo.likes}</span>
+              </button>
+
+              <button
+                onClick={() => openEngagement('views', playingVideo.id)}
+                disabled={engagementLoading}
+                className="flex items-center gap-1 text-white/60 hover:text-white/90 text-sm transition-colors"
+                title="من شاهد"
+              >
+                <Eye className="w-4 h-4" />
+                <span>{playingVideo.views}</span>
+              </button>
+
+              <button
+                onClick={() => openEngagement('saves', playingVideo.id)}
+                disabled={engagementLoading}
+                className="flex items-center gap-1 text-white/60 hover:text-white/90 text-sm transition-colors"
+                title="من حفظ"
+              >
+                <Bookmark className="w-4 h-4" />
+                <span>{playingVideo.saves}</span>
+              </button>
+
+              {engagementLoading && <span className="text-white/40 text-xs animate-pulse">جاري التحميل...</span>}
+
               {playingVideo.description && (
-                <span className="flex-1 line-clamp-1 text-white/50 text-xs">{playingVideo.description}</span>
+                <span className="flex-1 line-clamp-1 text-white/50 text-xs mr-auto">{playingVideo.description}</span>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Engagement Modal (likers / savers / viewers) */}
+      <AnimatePresence>
+        {engagementModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center"
+            onClick={e => { if (e.target === e.currentTarget) setEngagementModal(null); }}
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-[#1a1a2e] rounded-t-2xl md:rounded-2xl w-full max-w-sm max-h-[70vh] flex flex-col overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  {engagementModal.type === 'likes' && <><Heart className="w-5 h-5 text-red-400 fill-red-400" /><span className="text-white font-semibold">من أعجب بالفيديو</span></>}
+                  {engagementModal.type === 'saves' && <><Bookmark className="w-5 h-5 text-yellow-400 fill-yellow-400" /><span className="text-white font-semibold">من حفظ الفيديو</span></>}
+                  {engagementModal.type === 'views' && <><Eye className="w-5 h-5 text-blue-400" /><span className="text-white font-semibold">من شاهد الفيديو</span></>}
+                  <span className="text-white/50 text-sm">({engagementModal.list.length})</span>
+                </div>
+                <button onClick={() => setEngagementModal(null)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto">
+                {engagementModal.list.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-white/40">
+                    {engagementModal.type === 'likes' && <Heart className="w-10 h-10 mb-2" />}
+                    {engagementModal.type === 'saves' && <Bookmark className="w-10 h-10 mb-2" />}
+                    {engagementModal.type === 'views' && <Eye className="w-10 h-10 mb-2" />}
+                    <p className="text-sm">لا يوجد سجلات بعد</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-white/5">
+                    {engagementModal.list.map((u, i) => (
+                      <li key={i} className="flex items-center gap-3 px-5 py-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+                          {u.user_avatar ? <img src={u.user_avatar} alt={u.user_name} className="w-full h-full object-cover" /> : u.user_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{u.user_name}</p>
+                          <p className="text-white/40 text-xs">{new Date(u.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
